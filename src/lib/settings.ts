@@ -51,7 +51,10 @@ function load(): AppSettings {
 }
 
 function applyTitle() {
-  if (typeof document !== 'undefined') document.title = appTitle(current)
+  if (typeof document === 'undefined') return
+  document.title = appTitle(current)
+  // Nombre bajo el ícono al "Agregar a Inicio" en iPhone: el del negocio (el título completo se corta).
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute('content', current.businessName || 'Kanan POS')
 }
 
 export function appTitle(s: AppSettings = current) {
