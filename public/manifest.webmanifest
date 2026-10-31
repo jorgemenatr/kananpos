@@ -1,0 +1,15 @@
+{
+  "name": "Kanan POS",
+  "short_name": "Kanan",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F4C4A",
+  "theme_color": "#0F4C4A",
+  "lang": "es-MX",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
