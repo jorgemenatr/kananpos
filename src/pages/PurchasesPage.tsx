@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LanguageTag, useLanguageLookup } from '../components/LanguageTag'
 import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { LocationSelect } from '../components/LocationSelect'
@@ -36,6 +37,7 @@ const errText = (e: unknown) => (isNetworkError(e) ? 'Sin conexión: intenta cua
 
 export function PurchasesPage() {
   const { products, online } = useInventory()
+  const languages = useLanguageLookup()
   const [supplierId, setSupplierId] = useState<string | null>(null)
   const [location, setLocation] = useState<StockLocation>('store')
   const [folio, setFolio] = useState('')
@@ -209,7 +211,10 @@ export function PurchasesPage() {
                       <div className="flex items-center gap-3">
                         <ProductImage path={r.imagePath} alt="" className="size-10 shrink-0 rounded-xs" />
                         <div className="min-w-0">
-                          <p className="font-medium md:truncate">{r.name}</p>
+                          <p className="font-medium md:truncate">
+                            <LanguageTag language={languages.get(r.barcode)} className="mr-1.5" />
+                            {r.name}
+                          </p>
                           <p className="font-mono text-caption break-all text-ink-subtle md:truncate">{r.barcode}</p>
                         </div>
                       </div>
@@ -308,6 +313,7 @@ export function PurchasesPage() {
 }
 
 function PurchaseItem({ purchase: p, onChanged }: { purchase: PurchaseRow; onChanged: () => void }) {
+  const languages = useLanguageLookup()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<PurchaseItemRow[] | null>(null)
   const [mode, setMode] = useState<'view' | 'edit' | 'cancel'>('view')
@@ -426,6 +432,7 @@ function PurchaseItem({ purchase: p, onChanged }: { purchase: PurchaseRow; onCha
                 {items.map((i) => (
                   <tr key={i.id} className="border-t border-line">
                     <td className="py-1.5">
+                      <LanguageTag language={languages.get(i.product_id)} className="mr-1.5" />
                       {i.product_name} <span className="font-mono text-caption text-ink-subtle">{i.barcode}</span>
                     </td>
                     <td className="py-1.5 text-right tabular-nums">{formatInt(i.quantity)}</td>

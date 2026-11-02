@@ -4,6 +4,7 @@ import { formatInt, formatMoney } from '../../lib/format'
 import type { CachedProduct } from '../../store/inventoryStore'
 import { Icon } from '../Icon'
 import { ProductImage } from '../ProductImage'
+import { LanguageTag, languageSearchText } from '../LanguageTag'
 
 interface Props {
   inputRef: RefObject<HTMLInputElement | null>
@@ -53,7 +54,7 @@ export function ProductPicker({
     if (!words.length) return []
     const out: CachedProduct[] = []
     for (const p of Object.values(products)) {
-      const text = normalize(`${p.name} ${p.barcode} ${p.category ?? ''}`)
+      const text = normalize(`${p.name} ${p.barcode} ${p.category ?? ''} ${languageSearchText(p.language)}`)
       if (words.every((w) => text.includes(w))) out.push(p)
     }
     // Primero lo que sí se puede vender; luego por nombre.
@@ -133,7 +134,10 @@ export function ProductPicker({
                 >
                   <ProductImage path={p.image_url} alt="" className="size-10 shrink-0 rounded-xs" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-label text-ink">{p.name}</p>
+                    <p className="truncate text-label text-ink">
+                      <LanguageTag language={p.language} className="mr-1.5" />
+                      {p.name}
+                    </p>
                     <p className="truncate font-mono text-caption text-ink-subtle">{p.barcode}</p>
                   </div>
                   <div className="shrink-0 text-right">

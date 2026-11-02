@@ -41,3 +41,6 @@ grant usage on schema public to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+
+-- Realtime (lo usa 20261031000100_preventas_tickets_compartidos.sql).
+create publication supabase_realtime;

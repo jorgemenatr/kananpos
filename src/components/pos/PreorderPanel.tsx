@@ -7,6 +7,7 @@ import { PAYMENT_LABELS, type PaymentPart, type SaleRow, type TicketItemRow, typ
 import { inventoryStore, type CachedProduct } from '../../store/inventoryStore'
 import { CancelTicketModal } from '../CancelTicketModal'
 import { Icon } from '../Icon'
+import { LanguageTag } from '../LanguageTag'
 import { PaymentPanel } from './PaymentPanel'
 
 interface Props {
@@ -162,6 +163,7 @@ export function PreorderPanel({ ticketId, productsById, online, onChanged }: Pro
               <li key={i.id} className={`flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2 ${i.parent_item_id ? 'pl-8' : ''}`}>
                 <span className="min-w-0 flex-1 font-medium">
                   {i.parent_item_id && <span className="text-ink-subtle">↳ </span>}
+                  <LanguageTag language={i.language} className="mr-1.5" />
                   {i.product_name}
                   {i.preorder && <span className="ml-2 badge badge-warning">Preventa</span>}
                 </span>

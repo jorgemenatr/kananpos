@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { FiltersButton } from '../components/FiltersButton'
 import { Icon } from '../components/Icon'
+import { LanguageTag, languageSearchText } from '../components/LanguageTag'
 import { MoreMenu } from '../components/MoreMenu'
 import { ProductEditModal } from '../components/ProductEditModal'
 import { ProductImage } from '../components/ProductImage'
@@ -120,7 +121,7 @@ export function InventoryPage() {
       if (stock === 'out' && (scopeQty(p, scope) > 0 || !tracksStock(p))) return false
       if (stock === 'alert' && storeStatus(p) === 'ok') return false
       if (!words.length) return true
-      const text = normalize(`${p.name} ${p.barcode} ${p.category ?? ''} ${p.supplier ?? ''}`)
+      const text = normalize(`${p.name} ${p.barcode} ${p.category ?? ''} ${p.supplier ?? ''} ${languageSearchText(p.language)}`)
       return words.every((w) => text.includes(w))
     })
     const { key, dir } = sort
@@ -492,6 +493,7 @@ function ProductGrid({ products, scope, onEdit }: { products: CachedProduct[]; s
           <div className="flex flex-1 flex-col gap-1 p-3">
             <div className="flex items-start gap-1">
               <p className="line-clamp-2 flex-1 text-label text-ink" title={p.name}>
+                <LanguageTag language={p.language} className="mr-1.5" />
                 {p.name}
               </p>
               <EditButton product={p} onEdit={onEdit} />
@@ -548,6 +550,7 @@ function ProductTable({
             <ProductImage path={p.image_url} alt="" className="size-12 shrink-0 rounded-xs" />
             <div className="min-w-0 flex-1 space-y-0.5">
               <p className="flex flex-wrap items-center gap-2 font-medium">
+                <LanguageTag language={p.language} />
                 {p.name}
                 <PendingBadge product={p} />
               </p>
@@ -596,6 +599,7 @@ function ProductTable({
               </td>
               <td className="h-row px-4 font-medium">
                 <span className="flex items-center gap-2">
+                  <LanguageTag language={p.language} />
                   {p.name}
                   <PendingBadge product={p} />
                 </span>

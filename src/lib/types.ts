@@ -62,12 +62,35 @@ export interface Product {
   description: string | null
   /** productId de TCGplayer (fila de catalog_products) con el que se vinculó. */
   catalog_product_id: number | null
+  /** Idioma del producto (inglés, español…); null = no aplica (comida, accesorios). */
+  language: ProductLanguage | null
   created_by: string | null
   created_at: string
   updated_at: string
 }
 
 export type PreorderDepositType = 'percent' | 'amount'
+
+/**
+ * Idioma del producto sellado. El catálogo de TCGplayer solo trae la versión
+ * en inglés: la de español es otro producto de inventario (otro código de
+ * barras) vinculado a la misma fila del catálogo.
+ */
+export type ProductLanguage = 'en' | 'es' | 'ja' | 'zh'
+
+export const LANGUAGES: ProductLanguage[] = ['en', 'es', 'ja', 'zh']
+
+/** Lo que dice la etiqueta. */
+export const LANGUAGE_LABELS: Record<ProductLanguage, string> = {
+  en: 'Inglés',
+  es: 'Español',
+  ja: 'Japonés',
+  zh: 'Chino',
+}
+
+export function isProductLanguage(v: unknown): v is ProductLanguage {
+  return typeof v === 'string' && (LANGUAGES as string[]).includes(v)
+}
 
 /** Fila de search_catalog (catálogo de producto sellado importado de TCGplayer). */
 export interface CatalogItem {
@@ -384,6 +407,8 @@ export interface TicketItemRow {
   preorder: boolean
   /** Refresco de un combo: apunta al renglón del combo. */
   parent_item_id: string | null
+  /** Idioma del producto (se lee del producto vinculado, no se copia al vender). */
+  language: ProductLanguage | null
 }
 
 /** Resultado de checkout_ticket / add_ticket_payment / cancel_ticket. */

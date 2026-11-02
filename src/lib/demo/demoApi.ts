@@ -83,6 +83,8 @@ const products: Product[] = Array.from({ length: 24 }, (_, i) => {
     is_combo: i === 6,
     description: null,
     catalog_product_id: null,
+    // Pokémon: el primero en inglés y su versión en español (otro código).
+    language: category === 'TCG · Pokémon' ? (i === 10 ? 'es' : 'en') : null,
     created_by: ADMIN_ID,
     created_at: ago(10_000 - i),
     updated_at: ago(100),

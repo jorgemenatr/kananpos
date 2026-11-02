@@ -13,6 +13,7 @@ import {
   type LotPick,
   type PreorderDepositType,
   type Product,
+  type ProductLanguage,
   type ProductLot,
   type StockLocation,
 } from '../lib/types'
@@ -20,6 +21,9 @@ import { comboDrinks } from '../store/inventoryStore'
 import { useInventory } from '../store/useInventory'
 import { CategorySelect } from './CategorySelect'
 import { Icon } from './Icon'
+import { LanguageSelect } from './LanguageSelect'
+import { LanguageTag } from './LanguageTag'
+import { languageApplies } from '../lib/language'
 import { LocationSelect } from './LocationSelect'
 import { LotPicker } from './LotPicker'
 import { ProductImage } from './ProductImage'
@@ -48,6 +52,7 @@ type Fields = {
   depositType: PreorderDepositType
   depositValue: string
   isCombo: boolean
+  language: ProductLanguage | null
 }
 
 const moneyText = (n: number | null) => (n == null ? '' : String(n))
@@ -90,6 +95,7 @@ export function ProductEditModal({ productId, suppliers, onCancel, onSaved, onCh
           depositType: p.preorder_deposit_type ?? 'percent',
           depositValue: moneyText(p.preorder_deposit_value ?? 0),
           isCombo: p.is_combo ?? false,
+          language: p.language ?? null,
         })
         setTimeout(() => nameRef.current?.focus(), 0)
         if (p.catalog_product_id != null) void getCatalogName(p.catalog_product_id).then(setCatalogName)
@@ -156,6 +162,7 @@ export function ProductEditModal({ productId, suppliers, onCancel, onSaved, onCh
           preorderDepositType: fields.depositType,
           preorderDepositValue: Number.isNaN(depositValue) ? 0 : depositValue,
           isCombo: fields.isCombo,
+          language: fields.language,
         },
         image,
       )
@@ -185,7 +192,10 @@ export function ProductEditModal({ productId, suppliers, onCancel, onSaved, onCh
       >
         <div className="flex items-start justify-between gap-4 border-b border-line px-6 py-5">
           <div className="min-w-0">
-            <h2 id="pe-title" className="text-title">Editar producto</h2>
+            <h2 id="pe-title" className="flex flex-wrap items-center gap-2 text-title">
+              Editar producto
+              <LanguageTag language={product?.language} />
+            </h2>
             {product && (
               <p className="mt-1 text-ink-muted">
                 Código: <span className="font-mono text-ink">{product.barcode}</span> ·{' '}
@@ -232,6 +242,15 @@ export function ProductEditModal({ productId, suppliers, onCancel, onSaved, onCh
                 <input id="pe-supplier" className={input} value={fields.supplier} onChange={set('supplier')} list="pe-suppliers" autoComplete="off" />
                 <datalist id="pe-suppliers">{suppliers.map((s) => <option key={s} value={s} />)}</datalist>
               </div>
+              {(languageApplies(fields.category) || fields.language || product?.language) && (
+                <div className="md:col-span-2">
+                  <span className={label}>Idioma</span>
+                  <LanguageSelect value={fields.language} onChange={(language) => setFields((f) => (f ? { ...f, language } : f))} />
+                  <span className="mt-1 block text-caption text-ink-muted">
+                    El de inglés y el de español son productos distintos, cada uno con su código de barras.
+                  </span>
+                </div>
+              )}
               <div className="md:col-span-2">
                 <label className={label} htmlFor="pe-description">Descripción</label>
                 <textarea id="pe-description" rows={3} className="field h-auto py-2" value={fields.description} onChange={set('description')} />

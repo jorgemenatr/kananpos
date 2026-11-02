@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { LanguageTag, useLanguageLookup } from '../components/LanguageTag'
 import { useAuth } from '../auth/useAuth'
 import { internalCodeLabel } from '../lib/barcode'
 import { buildMovementRows, exportCsv, exportXlsx } from '../lib/export'
@@ -35,6 +36,7 @@ function describeQueueItem(item: QueueItem) {
 
 export function HistoryPage() {
   const { queue, failed, online } = useInventory()
+  const languages = useLanguageLookup()
   const [rows, setRows] = useState<MovementHistoryRow[]>([])
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(false)
@@ -173,7 +175,10 @@ export function HistoryPage() {
           {rows.map((m) => (
             <li key={m.id} className={`space-y-1.5 px-4 py-3 ${m.cancelled_by_movement_id ? 'text-ink-subtle' : ''}`}>
               <div className="flex items-start justify-between gap-3">
-                <p className="min-w-0 font-medium">{m.product_name}</p>
+                <p className="min-w-0 font-medium">
+                  <LanguageTag language={languages.get(m.product_id)} className="mr-1.5" />
+                  {m.product_name}
+                </p>
                 <span className={`shrink-0 font-medium tabular-nums ${deltaClass(m)}`}>
                   {m.delta > 0 ? '+' : ''}
                   {formatInt(m.delta)}
@@ -244,7 +249,10 @@ export function HistoryPage() {
               <tr key={m.id} className={`border-t border-line hover:bg-subtle ${m.cancelled_by_movement_id ? 'text-ink-subtle' : ''}`}>
                 <td className="h-row px-3 whitespace-nowrap text-ink-muted">{formatDateTime(m.created_at)}</td>
                 <td className="h-row px-3 font-mono text-[13px] text-ink-muted">{m.barcode}</td>
-                <td className="h-row min-w-56 px-3 font-medium">{m.product_name}</td>
+                <td className="h-row min-w-56 px-3 font-medium">
+                  <LanguageTag language={languages.get(m.product_id)} className="mr-1.5" />
+                  {m.product_name}
+                </td>
                 <td className="h-row px-3 whitespace-nowrap">
                   <span className="flex flex-col items-start gap-1 py-1">
                     {MOVEMENT_LABELS[m.type] ?? m.type}

@@ -5,6 +5,7 @@ import { CancelTicketModal } from '../components/CancelTicketModal'
 import { CustomerFormModal } from '../components/CustomerFormModal'
 import { Icon } from '../components/Icon'
 import { ProductImage } from '../components/ProductImage'
+import { LanguageTag } from '../components/LanguageTag'
 import { CustomerPicker } from '../components/pos/CustomerPicker'
 import { PaymentPanel } from '../components/pos/PaymentPanel'
 import { ProductPicker } from '../components/pos/ProductPicker'
@@ -567,7 +568,10 @@ function ComboChoiceModal({
                   className="flex w-full cursor-pointer items-center gap-3 px-6 py-3 text-left hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ProductImage path={p.image_url} alt="" className="size-10 shrink-0 rounded-xs" />
-                  <span className="min-w-0 flex-1 truncate text-label">{p.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-label">
+                    <LanguageTag language={p.language} className="mr-1.5" />
+                    {p.name}
+                  </span>
                   <span className={`text-caption ${avail > 0 ? 'text-ink-muted' : 'text-danger-fg'}`}>
                     {avail === Infinity ? 'Sin inventario' : avail > 0 ? `Disponibles: ${formatInt(avail)}` : 'Sin stock'}
                   </span>
@@ -659,6 +663,7 @@ function LineRow({
           <ProductImage path={product?.image_url ?? null} alt="" className="size-10 shrink-0 rounded-xs" />
           <div className="min-w-40">
             <p className="font-semibold text-ink">
+              <LanguageTag language={product?.language} className="mr-2" />
               {name}
               {product?.is_preorder && <span className="ml-2 badge badge-warning align-middle">Preventa</span>}
             </p>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { nameWithLanguage } from './LanguageTag'
 import { Link } from 'react-router-dom'
 import { formatDateTime, formatMoney } from '../lib/format'
 import { getPreorderItems, listPreorders } from '../lib/sales'
@@ -62,7 +63,7 @@ export function CustomerPreorders({ customer }: { customer: Customer }) {
                     <span className="font-normal text-ink-muted">
                       {(items[s.id] ?? [])
                         .filter((i) => i.preorder)
-                        .map((i) => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
+                        .map((i) => `${nameWithLanguage(i.product_name, i.language)}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
                         .join(', ')}
                     </span>
                   </span>

@@ -6,12 +6,14 @@ import { compressImage } from '../lib/images'
 import { formatDateTime, parseCount, parseMoney } from '../lib/format'
 import { findUnlink } from '../lib/products'
 import { createBurstDetector } from '../lib/scannerBurst'
-import type { CatalogItem, StockLocation } from '../lib/types'
+import { languageApplies, suggestedLanguage } from '../lib/language'
+import type { CatalogItem, ProductLanguage, StockLocation } from '../lib/types'
 import { inventoryStore, type CreateOutcome } from '../store/inventoryStore'
 import { useInventory } from '../store/useInventory'
 import { CatalogSearch } from './CatalogSearch'
 import { CategorySelect } from './CategorySelect'
 import { Icon } from './Icon'
+import { LanguageSelect } from './LanguageSelect'
 import { LocationSelect } from './LocationSelect'
 import { WebcamCapture } from './WebcamCapture'
 
@@ -58,6 +60,9 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
+  const [language, setLanguage] = useState<ProductLanguage | null>(null)
+  // Si ya se eligió el idioma a mano, las sugerencias no lo pisan.
+  const [languageTouched, setLanguageTouched] = useState(false)
   // El código se desvinculó antes de otro producto: no se vincula solo al catálogo.
   const [unlinked, setUnlinked] = useState<string | null>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -125,11 +130,26 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
   const set = (key: keyof Fields) => (e: { target: { value: string } }) =>
     setFields((f) => ({ ...f, [key]: e.target.value }))
 
+  /**
+   * Idioma que se propone al vincular. El catálogo de TCGplayer trae el UPC de
+   * la versión en inglés: si el código escaneado es otro y el producto se
+   * eligió a mano, casi siempre es la versión en español.
+   */
+  function catalogLanguage(item: CatalogItem, by: 'barcode' | 'search', category: string): ProductLanguage | null {
+    const suggested = suggestedLanguage(category, item.source)
+    if (suggested !== 'en') return suggested
+    const digits = (v: string | null | undefined) => (v ?? '').replace(/\D/g, '').replace(/^0+/, '')
+    if (by === 'search' && barcode && digits(barcode) && digits(item.upc) && digits(barcode) !== digits(item.upc)) return 'es'
+    return 'en'
+  }
+
   function applyCatalog(item: CatalogItem, by: 'barcode' | 'search') {
     const token = ++linkToken.current
     setLinked(item)
     setLinkedBy(by)
     setError(null)
+    const category = fields.category || categoryForCatalog(item.source)
+    if (!languageTouched) setLanguage(catalogLanguage(item, by, category))
     setFields((f) => ({
       ...f,
       name: item.name,
@@ -162,6 +182,7 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
     linkToken.current++
     setLinked(null)
     setLinkedBy(null)
+    if (!languageTouched) setLanguage(suggestedLanguage(fields.category))
     setImageLoading(false)
     if (imageSource === 'catalog') {
       setImage(null)
@@ -226,6 +247,7 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
         location,
         description: fields.description,
         catalogProductId: linked?.id ?? null,
+        language,
       },
       image,
     )
@@ -300,7 +322,8 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
                     <p className="mt-2 notice bg-warning-bg text-warning-fg">
                       <Icon name="alert" className="mt-0.5" />
                       Este producto ya está en inventario con el código {linked.linked_barcode}
-                      {linked.linked_name && ` (${linked.linked_name})`}.
+                      {linked.linked_name && ` (${linked.linked_name})`}. Si es la versión en otro idioma, está bien: elige
+                      el idioma abajo.
                     </p>
                   )}
                 </div>
@@ -336,7 +359,14 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
             </div>
             <div>
               <label className={label} htmlFor="pf-category">Categoría</label>
-              <CategorySelect id="pf-category" value={fields.category} onChange={(category) => setFields((f) => ({ ...f, category }))} />
+              <CategorySelect
+                id="pf-category"
+                value={fields.category}
+                onChange={(category) => {
+                  setFields((f) => ({ ...f, category }))
+                  if (!languageTouched && !linked) setLanguage(suggestedLanguage(category))
+                }}
+              />
             </div>
             <div>
               <label className={label} htmlFor="pf-supplier">Proveedor</label>
@@ -358,6 +388,23 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
                 </span>
               </div>
             </div>
+            {(languageApplies(fields.category, linked?.source) || language) && (
+              <div className="md:col-span-2">
+                <span className={label}>Idioma</span>
+                <LanguageSelect
+                  value={language}
+                  onChange={(l) => {
+                    setLanguage(l)
+                    setLanguageTouched(true)
+                  }}
+                />
+                <span className="mt-1 block text-caption text-ink-muted">
+                  {linkedBy === 'search' && language === 'es'
+                    ? 'El código no es el de la versión en inglés del catálogo: se propone español. Revísalo en la caja.'
+                    : 'El de inglés y el de español son productos distintos, cada uno con su código de barras.'}
+                </span>
+              </div>
+            )}
             <div className="md:col-span-2">
               <label className={label} htmlFor="pf-description">Descripción</label>
               <textarea

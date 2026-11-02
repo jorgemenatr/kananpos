@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LanguageTag, nameWithLanguage, useLanguageLookup } from '../components/LanguageTag'
 import { Icon } from '../components/Icon'
 import { ProductImage } from '../components/ProductImage'
 import { ProductPicker } from '../components/pos/ProductPicker'
@@ -29,6 +30,7 @@ const other = (l: StockLocation): StockLocation => (l === 'store' ? 'warehouse' 
 
 export function TransfersPage() {
   const { products, online } = useInventory()
+  const languages = useLanguageLookup()
   const [from, setFrom] = useState<StockLocation>('warehouse')
   const to = other(from)
   const [lines, setLines] = useState<Line[]>([])
@@ -208,7 +210,10 @@ export function TransfersPage() {
                       <div className="flex items-center gap-3">
                         <ProductImage path={r.imagePath} alt="" className="size-10 shrink-0 rounded-xs" />
                         <div className="min-w-0">
-                          <p className="font-medium md:truncate">{r.name}</p>
+                          <p className="font-medium md:truncate">
+                            <LanguageTag language={languages.get(r.barcode)} className="mr-1.5" />
+                            {r.name}
+                          </p>
                           <p className="font-mono text-caption break-all text-ink-subtle md:truncate">{r.barcode}</p>
                         </div>
                       </div>
@@ -284,7 +289,7 @@ export function TransfersPage() {
             <ul className="mt-2 list-disc pl-5">
               {rows.map((r) => (
                 <li key={r.barcode}>
-                  <span className="tabular-nums">{formatInt(r.qty)}</span> × {r.name}
+                  <span className="tabular-nums">{formatInt(r.qty)}</span> × {nameWithLanguage(r.name, languages.get(r.barcode))}
                 </li>
               ))}
             </ul>
@@ -330,6 +335,7 @@ export function TransfersPage() {
 }
 
 function TransferItem({ transfer: t }: { transfer: TransferRow }) {
+  const languages = useLanguageLookup()
   const [open, setOpen] = useState(false)
   const [lots, setLots] = useState<TransferLotRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -375,7 +381,9 @@ function TransferItem({ transfer: t }: { transfer: TransferRow }) {
           {byProduct.map((g) => (
             <div key={g.barcode} className="py-1">
               <p>
-                <span className="font-medium tabular-nums">{formatInt(g.total)}</span> × {g.name}{' '}
+                <span className="font-medium tabular-nums">{formatInt(g.total)}</span> ×{' '}
+                <LanguageTag language={languages.get(g.barcode)} className="mr-1.5" />
+                {g.name}{' '}
                 <span className="font-mono text-caption text-ink-subtle">{g.barcode}</span>
               </p>
               <ul className="pl-4 text-caption text-ink-muted">

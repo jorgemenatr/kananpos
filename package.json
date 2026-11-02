@@ -10,7 +10,8 @@
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "catalogo": "node --env-file-if-exists=.env.catalogo scripts/importar-catalogo.mjs",
-    "clientes": "node --env-file-if-exists=.env.clientes scripts/clientes.mjs"
+    "clientes": "node --env-file-if-exists=.env.clientes scripts/clientes.mjs",
+    "fotos": "node --env-file-if-exists=.env.catalogo scripts/fotos-productos.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",

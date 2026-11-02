@@ -69,16 +69,30 @@ export async function listPreorders(customerId?: string): Promise<SaleRow[]> {
   return ((data ?? []) as SaleRow[]).map(normalizeSale)
 }
 
+// El idioma se lee del producto vinculado (la venta copia el nombre, no el idioma).
+const ITEM_COLUMNS = '*, product:products(language)'
+
+type ItemWithProduct = Omit<TicketItemRow, 'language'> & { product: { language: TicketItemRow['language'] } | null }
+
+function toItems(data: unknown): TicketItemRow[] {
+  return ((data ?? []) as ItemWithProduct[]).map(({ product, ...i }) => ({
+    ...i,
+    unit_price: Number(i.unit_price),
+    line_total: Number(i.line_total),
+    language: product?.language ?? null,
+  }))
+}
+
 /** Productos de varias preventas (para la lista: qué llevan y si ya se pueden entregar). */
 export async function getPreorderItems(ticketIds: string[]): Promise<TicketItemRow[]> {
   if (ticketIds.length === 0) return []
   const { data, error } = await supabase
     .from('ticket_items')
-    .select('*')
+    .select(ITEM_COLUMNS)
     .in('ticket_id', ticketIds)
     .order('position', { ascending: true })
   if (error) throw error
-  return ((data ?? []) as TicketItemRow[]).map((i) => ({ ...i, unit_price: Number(i.unit_price), line_total: Number(i.line_total) }))
+  return toItems(data)
 }
 
 export async function getSale(id: string): Promise<SaleRow | null> {
@@ -139,11 +153,11 @@ export async function getTicketPayments(ticketId: string): Promise<TicketPayment
 export async function getTicketItems(ticketId: string): Promise<TicketItemRow[]> {
   const { data, error } = await supabase
     .from('ticket_items')
-    .select('*')
+    .select(ITEM_COLUMNS)
     .eq('ticket_id', ticketId)
     .order('position', { ascending: true })
   if (error) throw error
-  return ((data ?? []) as TicketItemRow[]).map((i) => ({ ...i, unit_price: Number(i.unit_price), line_total: Number(i.line_total) }))
+  return toItems(data)
 }
 
 export const SALES_PAGE = PAGE
