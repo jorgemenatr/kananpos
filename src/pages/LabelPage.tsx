@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { LANGUAGE_LABELS, isProductLanguage } from '../lib/types'
 import { useParams, useSearchParams } from 'react-router-dom'
 import JsBarcode from 'jsbarcode'
 import { Icon } from '../components/Icon'
@@ -55,7 +56,15 @@ export function LabelPage() {
       <div className="label mx-auto flex w-[50mm] flex-col items-center justify-center overflow-hidden border border-dashed border-control bg-white font-sans text-black" style={{ height: '30mm' }}>
         {product && <p className="w-full truncate text-center text-[9pt] font-bold leading-tight">{product.name}</p>}
         <svg ref={svgRef} className="h-auto max-w-full" />
-        {product && <p className="text-[9pt] font-bold leading-tight">{formatMoney(product.price)}</p>}
+        {product && (
+          <p className="flex items-center gap-1.5 text-[9pt] font-bold leading-tight">
+            {/* Impresora térmica: recuadro en negro, no color. */}
+            {isProductLanguage(product.language) && (
+              <span className="border border-black px-1 text-[7pt] uppercase">{LANGUAGE_LABELS[product.language]}</span>
+            )}
+            {formatMoney(product.price)}
+          </p>
+        )}
       </div>
     </div>
   )

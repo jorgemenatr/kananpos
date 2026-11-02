@@ -10,6 +10,7 @@ import type {
   PayTicketResult,
   PreorderDepositType,
   Product,
+  ProductLanguage,
   ScanMode,
   ScanRpcResult,
   StockLocation,
@@ -57,6 +58,8 @@ export interface CachedProduct {
   preorder_reserved?: number
   /** Combo: al venderlo se elige una bebida del grupo de bebidas (la caché anterior no lo trae). */
   is_combo?: boolean
+  /** Idioma (inglés, español…); null o ausente = no aplica (la caché anterior no lo trae). */
+  language?: ProductLanguage | null
   /** Alta que aún está en la cola (no existe en el servidor todavía). */
   pending?: boolean
 }
@@ -75,6 +78,8 @@ export interface CreateInput {
   description?: string | null
   /** productId de TCGplayer (catalog_products) vinculado. */
   catalogProductId?: number | null
+  /** Idioma del producto (las altas de la cola anterior no lo traen: no aplica). */
+  language?: ProductLanguage | null
 }
 
 /** Venta cobrada en el mostrador (se envía con pay_ticket). */
@@ -246,6 +251,7 @@ function toCached(p: Product): CachedProduct {
     preorder_deposit_value: p.preorder_deposit_value == null ? undefined : Number(p.preorder_deposit_value),
     preorder_reserved: p.preorder_reserved,
     is_combo: p.is_combo,
+    language: p.language ?? null,
   }
 }
 
@@ -388,7 +394,7 @@ class InventoryStore {
             .from('products')
             .select(
               'id, barcode, name, category, supplier, price, quantity, warehouse_quantity, image_url, is_internal_code, track_stock, ' +
-                'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo',
+                'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, language',
             )
             .order('created_at', { ascending: true })
             .range(from, from + PAGE - 1)
@@ -576,6 +582,7 @@ class InventoryStore {
         supplier: raw.supplier?.trim() || null,
         description: raw.description?.trim() || null,
         catalogProductId: raw.catalogProductId ?? null,
+        language: raw.language ?? null,
         location: raw.location ?? 'store',
       }
       const location = input.location ?? 'store'
@@ -645,6 +652,7 @@ class InventoryStore {
         warehouse_quantity: location === 'warehouse' ? input.initialQuantity : 0,
         image_url: null,
         is_internal_code: !input.barcode,
+        language: input.language ?? null,
         pending: true,
       }
       this.enqueue({ kind: 'create', opId, createdAt: new Date().toISOString(), input, imagePath: null })
@@ -685,6 +693,9 @@ class InventoryStore {
       p_description: input.description ?? null,
       p_catalog_product_id: input.catalogProductId ?? null,
       p_location: location,
+      // Solo si trae idioma: así un alta sin idioma también funciona en una
+      // base que aún no tiene la migración 20261102000100.
+      ...(input.language ? { p_language: input.language } : {}),
     })
     if (error) {
       if (!isNetworkError(error) && !isAuthError(error)) throw new PermanentError(error.message)

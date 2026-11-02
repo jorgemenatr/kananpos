@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { nameWithLanguage } from '../components/LanguageTag'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { PreorderPanel } from '../components/pos/PreorderPanel'
@@ -159,7 +160,7 @@ export function PreventasPage() {
             {visible.map((s) => {
               const current = s.id === selectedId
               const ready = s.balance <= 0 && inStore(s.id)
-              const names = (items[s.id] ?? []).filter((i) => i.preorder).map((i) => `${i.product_name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
+              const names = (items[s.id] ?? []).filter((i) => i.preorder).map((i) => `${nameWithLanguage(i.product_name, i.language)}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`)
               return (
                 <li key={s.id}>
                   <button

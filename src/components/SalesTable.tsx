@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import { LanguageTag } from './LanguageTag'
 import { formatDateTime, formatInt, formatMoney } from '../lib/format'
 import { getTicketItems, getTicketPayments, saleTitle, setTicketNotes } from '../lib/sales'
 import { PAYMENT_LABELS, TICKET_STATUS_LABELS, type SaleRow, type TicketItemRow, type TicketPaymentRow } from '../lib/types'
@@ -194,6 +195,7 @@ function SaleDetail({ sale: s, detail, onChanged }: { sale: SaleRow; detail: Det
               <tr key={i.id} className="border-b border-line last:border-0 max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-3 max-md:py-2">
                 <td className={`py-1.5 pr-3 max-md:basis-full max-md:p-0 ${i.parent_item_id ? 'pl-5' : ''}`}>
                   {i.parent_item_id && <span className="text-ink-subtle">↳ </span>}
+                  <LanguageTag language={i.language} className="mr-1.5" />
                   {i.product_name}
                   {i.preorder && <span className="ml-2 badge badge-warning">Preventa</span>}
                   <span className="ml-2 font-mono text-caption text-ink-subtle">{i.barcode}</span>

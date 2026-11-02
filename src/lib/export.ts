@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { getSignedUrlsForExport } from './images'
-import { LOCATION_LABELS, MOVEMENT_LABELS, type MovementHistoryRow, type Product, type StockLocation } from './types'
+import { LANGUAGE_LABELS, LOCATION_LABELS, MOVEMENT_LABELS, isProductLanguage, type MovementHistoryRow, type Product, type StockLocation } from './types'
 
 type Row = Record<string, string | number | null>
 
@@ -38,7 +38,7 @@ export async function buildInventoryRows(scope: StockScope = 'total'): Promise<R
   const [products, costs] = await Promise.all([
     fetchAll<Product>(
       'products',
-      'id, barcode, name, category, supplier, price, quantity, warehouse_quantity, image_url, description, catalog_product_id, created_at',
+      'id, barcode, name, category, supplier, price, quantity, warehouse_quantity, image_url, description, catalog_product_id, language, created_at',
       'created_at',
     ),
     // Solo un admin recibe costos (vista product_costs).
@@ -49,6 +49,7 @@ export async function buildInventoryRows(scope: StockScope = 'total'): Promise<R
   return products.map((p) => ({
     'Código': p.barcode,
     'Nombre': p.name,
+    'Idioma': isProductLanguage(p.language) ? LANGUAGE_LABELS[p.language] : null,
     'Categoría': p.category,
     'Proveedor': p.supplier,
     'Costo': costOf.get(p.id) == null ? null : Number(costOf.get(p.id)),

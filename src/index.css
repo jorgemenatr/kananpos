@@ -73,6 +73,13 @@
   --color-info-fg: #0f4c4a;
   --color-info-solid: #1e7a6e;
 
+  /* Idioma del producto (etiqueta sólida con texto blanco; mismos colores en
+     claro y oscuro, todos con contraste ≥ 4.5:1 contra el blanco). */
+  --color-lang-en: #1d4ed8;
+  --color-lang-es: #b54708;
+  --color-lang-ja: #be185d;
+  --color-lang-zh: #7c3aed;
+
   /* Barra lateral: surface-sunken, como pide Kanan. */
   --color-nav-bg: #e4eae8;
   --color-nav-border: #c5d1ce;
@@ -481,6 +488,20 @@
   .badge-info { @apply text-jade; }
   .badge-neutral { @apply text-ink-muted; }
   .badge-gold { @apply border-gold-side bg-gold text-on-gold; }
+
+  /*
+   * Idioma del producto: a diferencia de .badge va relleno de color, para que
+   * no pase desapercibido junto al nombre (inglés y español se confunden).
+   */
+  .lang-tag {
+    @apply inline-flex shrink-0 items-center whitespace-nowrap rounded-xs px-1.5 py-px align-middle text-[11px] leading-4 tracking-wide text-white uppercase;
+    font-weight: 700;
+  }
+  .lang-tag-lg { @apply rounded-sm px-2.5 py-1 text-label; }
+  .lang-en { background: var(--color-lang-en); }
+  .lang-es { background: var(--color-lang-es); }
+  .lang-ja { background: var(--color-lang-ja); }
+  .lang-zh { background: var(--color-lang-zh); }
 
   /* Aviso en línea (error, precaución, info). */
   .notice {

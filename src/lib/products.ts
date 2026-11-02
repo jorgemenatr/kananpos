@@ -1,6 +1,6 @@
 import { uploadProductImage } from './images'
 import { supabase } from './supabase'
-import type { LotPick, MovementHistoryRow, MovementResult, PreorderDepositType, Product, StockLocation } from './types'
+import type { LotPick, MovementHistoryRow, MovementResult, PreorderDepositType, Product, ProductLanguage, StockLocation } from './types'
 
 export interface ProductPatch {
   name: string
@@ -14,12 +14,14 @@ export interface ProductPatch {
   preorderDepositType: PreorderDepositType
   preorderDepositValue: number
   isCombo: boolean
+  /** Idioma; null = no aplica. */
+  language: ProductLanguage | null
 }
 
 // Sin cost: esa columna solo la lee un admin, con la vista product_costs.
 const COLUMNS =
   'id, barcode, name, category, supplier, supplier_id, price, quantity, warehouse_quantity, image_url, is_internal_code, track_stock, ' +
-  'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, description, catalog_product_id, created_by, created_at, updated_at'
+  'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, description, catalog_product_id, language, created_by, created_at, updated_at'
 
 const num = (p: Product): Product => ({
   ...p,
@@ -70,6 +72,7 @@ export async function updateProduct(id: string, patch: ProductPatch, image?: Blo
     preorder_deposit_type: patch.preorderDepositType,
     preorder_deposit_value: patch.preorderDepositValue,
     is_combo: patch.isCombo,
+    language: patch.language,
   }
   if (image === null) row.image_url = null
   else if (image) row.image_url = await uploadProductImage(image)

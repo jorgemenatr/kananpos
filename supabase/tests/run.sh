@@ -37,6 +37,16 @@ $P -d ${DB}_cat -f supabase/tests/categorias_antes.sql
 for f in supabase/migrations/*.sql; do [[ "$(basename "$f")" < "$CAT" ]] || $P -d ${DB}_cat -f "$f"; done
 $P -d ${DB}_cat -f supabase/tests/categorias_test.sql
 
+# Idioma del producto: una base en uso (productos con "ESPAÑOL" en el nombre)
+# recibe la migración del idioma.
+LANG_MIG=20261102000100
+$P -d postgres -c "drop database if exists ${DB}_lang" -c "create database ${DB}_lang"
+$P -d ${DB}_lang -f supabase/tests/00_supabase_stub.sql
+for f in supabase/migrations/*.sql; do [[ "$(basename "$f")" < "$LANG_MIG" ]] && $P -d ${DB}_lang -f "$f"; done
+$P -d ${DB}_lang -f supabase/tests/idioma_antes.sql
+for f in supabase/migrations/*.sql; do [[ "$(basename "$f")" < "$LANG_MIG" ]] || $P -d ${DB}_lang -f "$f"; done
+$P -d ${DB}_lang -f supabase/tests/idioma_test.sql
+
 # ---------- 10. Concurrencia ----------
 # Dos ventas al mismo tiempo de un producto con 5 en tienda (3 + 3 piezas):
 # solo una puede pasar. Y un traspaso tienda → bodega al mismo tiempo que una

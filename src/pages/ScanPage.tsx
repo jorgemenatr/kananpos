@@ -5,6 +5,7 @@ import { LocationSelect } from '../components/LocationSelect'
 import { LotPicker } from '../components/LotPicker'
 import { MoreMenu } from '../components/MoreMenu'
 import { ProductImage } from '../components/ProductImage'
+import { LanguageTag, useLanguageLookup } from '../components/LanguageTag'
 import { ProductPicker } from '../components/pos/ProductPicker'
 import { SupplierSelect } from '../components/SupplierSelect'
 import { useKeepFocus } from '../components/useKeepFocus'
@@ -19,7 +20,7 @@ import { inventoryStore, qtyAt, tracksStock, type CachedProduct, type ScanContex
 import { useInventory } from '../store/useInventory'
 
 type Feedback =
-  | { kind: 'success' | 'pending' | 'created' | 'undo'; title: string; product: Pick<CachedProduct, 'name' | 'barcode' | 'image_url'>; quantityAfter: number; detail: string; note?: string }
+  | { kind: 'success' | 'pending' | 'created' | 'undo'; title: string; product: Pick<CachedProduct, 'name' | 'barcode' | 'image_url' | 'language'>; quantityAfter: number; detail: string; note?: string }
   | { kind: 'error'; title: string; detail?: string }
   | { kind: 'idle' }
 
@@ -50,6 +51,7 @@ function savePref(key: string, value: string) {
 
 export function ScanPage() {
   const { products, recent, online } = useInventory()
+  const languages = useLanguageLookup()
   const [code, setCode] = useState('')
   const [mode, setModeState] = useState<ScanMode>(() => (loadPref('hachiko.mode', 'add') === 'set' ? 'set' : 'add'))
   const [qtyText, setQtyText] = useState(() => loadPref('hachiko.qty', '1'))
@@ -208,7 +210,7 @@ export function ScanPage() {
     setFeedback({
       kind: 'undo',
       title: out.pending ? 'Deshecho (pendiente de sincronizar)' : 'Escaneo deshecho',
-      product: { name: out.entry.name, barcode: out.entry.barcode, image_url: out.entry.imagePath },
+      product: { name: out.entry.name, barcode: out.entry.barcode, image_url: out.entry.imagePath, language: languages.get(out.entry.barcode) ?? null },
       quantityAfter: out.quantityAfter,
       detail: `${out.entry.delta >= 0 ? '−' : '+'}${formatInt(Math.abs(out.entry.delta))}`,
     })
@@ -435,6 +437,7 @@ export function ScanPage() {
                     <Icon name={feedback.kind === 'undo' ? 'undo' : feedback.kind === 'pending' ? 'wifi-off' : 'check'} size={20} />
                     {feedback.title}
                   </p>
+                  <LanguageTag language={feedback.product.language} size="lg" className="mt-2" />
                   <p className="mt-1 truncate text-5xl font-semibold tracking-tight text-ink" title={feedback.product.name}>
                     {feedback.product.name}
                   </p>
@@ -483,7 +486,10 @@ export function ScanPage() {
                 <li key={r.key} className={`flex items-center gap-3 px-4 py-3 ${r.undone ? 'opacity-60' : ''}`}>
                   <ProductImage path={r.imagePath} alt={r.name} className="size-10 shrink-0 rounded-xs" />
                   <div className="min-w-0 flex-1">
-                    <p className={`truncate font-medium ${r.undone ? 'line-through' : ''}`}>{r.name}</p>
+                    <p className={`truncate font-medium ${r.undone ? 'line-through' : ''}`}>
+                      <LanguageTag language={languages.get(r.barcode)} className="mr-1.5" />
+                      {r.name}
+                    </p>
                     <p className="truncate font-mono text-caption text-ink-muted">
                       {r.barcode} · {new Date(r.at).toLocaleTimeString('es-MX')}
                     </p>
