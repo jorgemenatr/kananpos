@@ -17,6 +17,8 @@ interface NavItem {
   end?: boolean
   /** Solo para administradores. */
   admin?: boolean
+  /** Solo mientras el inventario inicial esté abierto (Configuración). */
+  initialLoad?: boolean
   /** Subsecciones: siempre visibles, debajo de la sección. */
   children?: NavItem[]
 }
@@ -31,9 +33,12 @@ const NAV: NavItem[] = [
     label: 'Inventario',
     icon: 'grid',
     children: [
-      // Escaneo: alta y conteo de productos con el lector.
-      { to: '/agregar', label: 'Agregar', icon: 'barcode', admin: true },
+      // El primer conteo del negocio; se esconde cuando el admin lo cierra.
+      { to: '/inventario-inicial', label: 'Inventario inicial', icon: 'barcode', admin: true, initialLoad: true },
+      // Mercancía que llega de un proveedor (también da de alta productos nuevos).
       { to: '/compras', label: 'Compras', icon: 'truck', admin: true },
+      // Corregir lo que hay, con motivo.
+      { to: '/conteo', label: 'Conteo y ajustes', icon: 'list', admin: true },
       { to: '/movimiento-bodega', label: 'Movimiento de bodega', icon: 'swap', admin: true },
       { to: '/historial', label: 'Historial', icon: 'history' },
     ],
@@ -68,7 +73,7 @@ export function Layout() {
   const navigate = useNavigate()
   const simulator = useSimulatorEnabled()
   const isAdmin = profile?.role === 'admin'
-  const allowed = (n: NavItem) => !n.admin || isAdmin
+  const allowed = (n: NavItem) => (!n.admin || isAdmin) && (!n.initialLoad || settings.initialLoadOpen)
 
   async function handleSignOut() {
     if (queue.length > 0) {

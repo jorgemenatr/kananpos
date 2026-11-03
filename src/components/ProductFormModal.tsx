@@ -7,6 +7,7 @@ import { formatDateTime, parseCount, parseMoney } from '../lib/format'
 import { findUnlink } from '../lib/products'
 import { createBurstDetector } from '../lib/scannerBurst'
 import { languageApplies, suggestedLanguage } from '../lib/language'
+import { useSettings } from '../lib/settings'
 import type { CatalogItem, ProductLanguage, StockLocation } from '../lib/types'
 import { inventoryStore, type CreateOutcome } from '../store/inventoryStore'
 import { useInventory } from '../store/useInventory'
@@ -23,8 +24,17 @@ interface Props {
   defaultQuantity: number
   /** Dónde está la cantidad inicial (por defecto Tienda). */
   defaultLocation?: StockLocation
+  /**
+   * Se puede capturar cantidad inicial. Por defecto, solo mientras el
+   * inventario inicial esté abierto; en Compras nunca (las piezas entran con
+   * la compra).
+   */
+  allowInitialQuantity?: boolean
+  /** Texto bajo el título (p. ej. de dónde se da de alta). */
+  hint?: string
   onCancel: () => void
-  onSaved: (outcome: Extract<CreateOutcome, { type: 'ok' }>) => void
+  /** cost: el costo capturado (para precargarlo en la compra). */
+  onSaved: (outcome: Extract<CreateOutcome, { type: 'ok' }>, extra: { cost: number | null }) => void
 }
 
 type Fields = {
@@ -37,8 +47,18 @@ type Fields = {
   description: string
 }
 
-export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = 'store', onCancel, onSaved }: Props) {
+export function ProductFormModal({
+  barcode,
+  defaultQuantity,
+  defaultLocation = 'store',
+  allowInitialQuantity,
+  hint,
+  onCancel,
+  onSaved,
+}: Props) {
   const { products, online } = useInventory()
+  const settings = useSettings()
+  const withQuantity = allowInitialQuantity ?? settings.initialLoadOpen
   const [location, setLocation] = useState<StockLocation>(defaultLocation)
   const [fields, setFields] = useState<Fields>({
     name: '',
@@ -228,7 +248,7 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
     const name = fields.name.trim()
     const price = parseMoney(fields.price)
     const cost = parseMoney(fields.cost)
-    const quantity = parseCount(fields.quantity || '0')
+    const quantity = withQuantity ? parseCount(fields.quantity || '0') : 0
     if (!name) return setError('El nombre es obligatorio.')
     if (price === null || Number.isNaN(price)) return setError('El precio de venta es obligatorio y debe ser un número válido.')
     if (Number.isNaN(cost)) return setError('El costo debe ser un número válido.')
@@ -253,7 +273,7 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
     )
     setSaving(false)
     if (outcome.type === 'error') return setError(outcome.message)
-    onSaved(outcome)
+    onSaved(outcome, { cost })
   }
 
   const input = 'field'
@@ -275,6 +295,7 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
                 {barcode ?? `se generará un código interno ${internalCodeLabel()} al guardar`}
               </span>
             </p>
+            {hint && <p className="mt-1 text-caption text-ink-muted">{hint}</p>}
           </div>
           <button type="button" onClick={onCancel} className="btn btn-ghost">
             <Icon name="x" />
@@ -373,21 +394,25 @@ export function ProductFormModal({ barcode, defaultQuantity, defaultLocation = '
               <input id="pf-supplier" name="supplier" className={input} value={fields.supplier} onChange={set('supplier')} list="pf-suppliers" autoComplete="off" />
               <datalist id="pf-suppliers">{suppliers.map((s) => <option key={s} value={s} />)}</datalist>
             </div>
-            <div>
-              <label className={label} htmlFor="pf-qty">Cantidad inicial</label>
-              <input id="pf-qty" name="quantity" className={`${input} tabular-nums`} value={fields.quantity} onChange={set('quantity')} inputMode="numeric" autoComplete="off" />
-            </div>
-            <div className="md:col-span-2">
-              <span className={label}>¿Dónde está?</span>
-              <div className="flex flex-wrap items-center gap-3">
-                <LocationSelect value={location} onChange={setLocation} label="¿Dónde está la cantidad inicial?" />
-                <span className="text-caption text-ink-muted">
-                  {location === 'warehouse'
-                    ? 'En bodega no se puede vender hasta hacer un movimiento a tienda.'
-                    : 'La cantidad inicial entra como el primer lote, con este proveedor y costo.'}
-                </span>
-              </div>
-            </div>
+            {withQuantity && (
+              <>
+                <div>
+                  <label className={label} htmlFor="pf-qty">Cantidad inicial</label>
+                  <input id="pf-qty" name="quantity" className={`${input} tabular-nums`} value={fields.quantity} onChange={set('quantity')} inputMode="numeric" autoComplete="off" />
+                </div>
+                <div className="md:col-span-2">
+                  <span className={label}>¿Dónde está?</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <LocationSelect value={location} onChange={setLocation} label="¿Dónde está la cantidad inicial?" />
+                    <span className="text-caption text-ink-muted">
+                      {location === 'warehouse'
+                        ? 'En bodega no se puede vender hasta hacer un movimiento a tienda.'
+                        : 'La cantidad inicial entra como el primer lote, con este proveedor y costo.'}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
             {(languageApplies(fields.category, linked?.source) || language) && (
               <div className="md:col-span-2">
                 <span className={label}>Idioma</span>

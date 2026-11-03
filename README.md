@@ -263,8 +263,8 @@ abrirlos y restaurar un cliente: [`docs/RESPALDOS.md`](docs/RESPALDOS.md).
 
 | Rol | Puede |
 | --- | --- |
-| **Administrador** (`admin`) | Todo: vender, clientes, créditos, puntos de liga, **agregar inventario** (alta, sumar, fijar total, deshacer), **editar productos** y administrar usuarios |
-| **Mostrador** (`mostrador`) | Vender, clientes, créditos y puntos de liga. **No** puede agregar ni editar inventario (no ve *Agregar* ni el lápiz de editar) |
+| **Administrador** (`admin`) | Todo: vender, clientes, créditos, puntos de liga, **inventario** (inventario inicial, compras, conteo y ajustes, altas), **editar productos** y administrar usuarios |
+| **Mostrador** (`mostrador`) | Vender, clientes, créditos y puntos de liga. **No** puede agregar ni editar inventario (no ve *Inventario inicial*, *Compras*, *Conteo y ajustes* ni el lápiz de editar) |
 
 La regla se aplica también en la base de datos (triggers en `products` e
 `inventory_movements`), no solo escondiendo botones. Las ventas descuentan stock con
@@ -307,7 +307,7 @@ nunca se borra un movimiento.
   correcta y el motivo.
 - **Desvincular código** (Editar producto → *Desvincular código*): el producto se queda
   con un código interno `HCH-` (imprime su etiqueta nueva) y pierde el vínculo con el
-  catálogo. El código real queda libre: al escanearlo en *Agregar* se toma como nuevo y,
+  catálogo. El código real queda libre: al escanearlo en *Compras* se toma como nuevo y,
   como ya se había desvinculado, no se vincula solo al catálogo: avisa y se elige el
   producto correcto a mano. Si el producto ya tenía código interno, solo se quita el
   vínculo con el catálogo.
@@ -463,9 +463,28 @@ velocidad de lector en el campo con foco y manda Enter. Se apaga con `?simulador
 ## Menú
 
 El menú lateral queda: **Mostrador · Ventas · Clientes · Inventario**. Al entrar a Inventario
-aparecen sus subsecciones: **Agregar** (la pantalla de escaneo para dar de alta y contar
-productos, en `/agregar`), **Compras**, **Movimiento de bodega** (las tres solo para
-administradores) e **Historial**. Al iniciar sesión la app abre en el **Mostrador**.
+aparecen sus subsecciones (todas menos Historial, solo para administradores):
+
+- **Inventario inicial** (`/inventario-inicial`): el primer conteo del negocio. Escaneo
+  libre (sumar / fijar total), altas con cantidad inicial y, si se quiere, proveedor y
+  costo del lote. Se puede hacer por partes: lo contado se queda guardado. **Solo aparece
+  mientras el inventario inicial está abierto**; cuando el cliente avisa que terminó, un
+  admin lo cierra en **Configuración → Inventario inicial** (y lo puede volver a abrir).
+- **Compras** (`/compras`): la mercancía que llega de un proveedor, con su costo y folio.
+  Se captura con el lector: escanear otra vez el mismo producto suma una pieza, y un
+  código que no existe abre el alta ahí mismo (sin cantidad: las piezas entran con la
+  compra). **Funciona sin conexión**: la compra se guarda en la cola y se registra sola
+  al volver el internet (el id de la compra evita duplicarla).
+- **Conteo y ajustes** (`/conteo`): corregir lo que hay (conteo físico, merma, dañado,
+  error…). Cada escaneo lleva un **motivo** obligatorio y queda como *Ajuste* en el
+  historial; lo que sube entra con el último costo y proveedor del producto, y lo que baja
+  pide el lote. No da de alta productos. `/agregar` redirige aquí.
+- **Movimiento de bodega** e **Historial**.
+
+En **Inventario**, el botón **Nuevo producto** da de alta productos que no se compran
+(comida, torneos) o sin compra; la cantidad inicial solo se pide mientras el inventario
+inicial está abierto. Con el inventario inicial cerrado, la base ya no acepta escaneos
+sin motivo ni altas con cantidad inicial. Al iniciar sesión la app abre en el **Mostrador**.
 
 ## Tienda, bodega y lotes
 

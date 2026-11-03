@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
-import { createSupplier, listSuppliers } from '../lib/lots'
+import { cachedSuppliers, createSupplier, listSuppliers, saveSuppliersCache } from '../lib/lots'
 import { isNetworkError } from '../lib/supabase'
 import type { Supplier } from '../lib/types'
 
 // Se cargan una vez por sesión de la app; crear uno lo agrega a la lista.
+// Sin conexión se usa la última copia guardada (para capturar compras).
 let cache: Promise<Supplier[]> | null = null
-const load = () => (cache ??= listSuppliers().catch((e) => ((cache = null), Promise.reject(e))))
+const load = () =>
+  (cache ??= listSuppliers().catch((e) => {
+    cache = null
+    const saved = isNetworkError(e) ? cachedSuppliers() : null
+    return saved ?? Promise.reject(e)
+  }))
 
 const NEW = '__new__'
 
@@ -46,6 +52,7 @@ export function SupplierSelect({
       const s = await createSupplier(name)
       const list = [...(suppliers ?? []).filter((x) => x.id !== s.id), s].sort((a, b) => a.name.localeCompare(b.name, 'es-MX'))
       cache = Promise.resolve(list)
+      saveSuppliersCache(list)
       setSuppliers(list)
       onChange(s.id, s)
       setAdding(false)

@@ -23,10 +23,31 @@ export async function getProductLots(productId: string, location?: StockLocation
   return ((data ?? []) as ProductLot[]).map(num)
 }
 
+const SUPPLIERS_KEY = 'hachiko.suppliers.v1'
+
+/** Copia local de los proveedores: para capturar compras sin conexión. */
+export function cachedSuppliers(): Supplier[] | null {
+  try {
+    return JSON.parse(localStorage.getItem(SUPPLIERS_KEY) ?? 'null') as Supplier[] | null
+  } catch {
+    return null
+  }
+}
+
+export function saveSuppliersCache(list: Supplier[]) {
+  try {
+    localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(list))
+  } catch {
+    /* no crítico */
+  }
+}
+
 export async function listSuppliers(): Promise<Supplier[]> {
   const { data, error } = await supabase.from('suppliers').select('id, name, contact, note').order('name')
   if (error) throw error
-  return (data ?? []) as Supplier[]
+  const list = (data ?? []) as Supplier[]
+  saveSuppliersCache(list)
+  return list
 }
 
 /** Crea el proveedor; si ya existe uno con ese nombre (sin importar mayúsculas), lo devuelve. */

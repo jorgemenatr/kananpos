@@ -22,6 +22,12 @@ export interface AppSettings {
   preorderCreditPayments: boolean
   /** Categoría (texto de products.category) cuyos productos son las bebidas de los combos. */
   comboDrinksCategory: string | null
+  /**
+   * Sigue abierto el inventario inicial: se ve la sección para el primer
+   * conteo (por partes, con altas y cantidades). Al cerrarlo, la mercancía
+   * nueva entra solo por Compras y las correcciones por Conteo y ajustes.
+   */
+  initialLoadOpen: boolean
 }
 
 const KEY = 'hachiko.ajustes'
@@ -34,6 +40,7 @@ const DEFAULTS: AppSettings = {
   timezone: 'America/Mexico_City',
   preorderCreditPayments: true,
   comboDrinksCategory: null,
+  initialLoadOpen: true,
 }
 
 let current: AppSettings = load()
@@ -77,7 +84,8 @@ export function useSettings(): AppSettings {
 export async function refreshSettings() {
   const { data, error } = await supabase
     .from('app_settings')
-    .select('business_name, internal_code_prefix, day_cutoff_hour, timezone, preorder_credit_payments, combo_drinks_category')
+    // Todas las columnas: una base sin alguna migración simplemente no trae ese campo.
+    .select('*')
     .maybeSingle()
   // Sin red, o la base aún no tiene la migración: se queda la copia local.
   if (error || !data) return
@@ -89,6 +97,7 @@ export async function refreshSettings() {
     timezone: data.timezone ?? DEFAULTS.timezone,
     preorderCreditPayments: data.preorder_credit_payments ?? DEFAULTS.preorderCreditPayments,
     comboDrinksCategory: data.combo_drinks_category ?? null,
+    initialLoadOpen: data.initial_load_open ?? DEFAULTS.initialLoadOpen,
   }
   if (JSON.stringify(next) === JSON.stringify(current)) return
   current = next
@@ -113,8 +122,10 @@ export async function updateOperationSettings(patch: {
   dayCutoffHour?: number
   preorderCreditPayments?: boolean
   comboDrinksCategory?: string | null
+  initialLoadOpen?: boolean
 }) {
   const row: Record<string, unknown> = {}
+  if (patch.initialLoadOpen !== undefined) row.initial_load_open = patch.initialLoadOpen
   if (patch.comboDrinksCategory !== undefined) row.combo_drinks_category = patch.comboDrinksCategory
   if (patch.dayCutoffHour !== undefined) row.day_cutoff_hour = patch.dayCutoffHour
   if (patch.preorderCreditPayments !== undefined) row.preorder_credit_payments = patch.preorderCreditPayments

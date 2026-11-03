@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { ProductFormModal } from '../components/ProductFormModal'
 import { Icon } from '../components/Icon'
 import { LocationSelect } from '../components/LocationSelect'
@@ -13,7 +14,7 @@ import { isInternalCode, normalizeBarcode } from '../lib/barcode'
 import { exportCsv, exportXlsx, buildInventoryRows } from '../lib/export'
 import { formatInt, formatMoney, parseCount, parseMoney } from '../lib/format'
 import { createBurstDetector } from '../lib/scannerBurst'
-import { exportName } from '../lib/settings'
+import { exportName, useSettings } from '../lib/settings'
 import { sounds } from '../lib/sounds'
 import { LOCATION_LABELS, type LotPick, type ScanMode, type StockLocation } from '../lib/types'
 import { inventoryStore, qtyAt, tracksStock, type CachedProduct, type ScanContext } from '../store/inventoryStore'
@@ -34,6 +35,21 @@ const STYLES: Record<Feedback['kind'], string> = {
   error: 'border-danger-solid bg-danger-bg text-danger-fg',
 }
 
+/*
+ * Pantalla de escaneo, en dos versiones:
+ *  - Inventario inicial ("initial"): el primer conteo del negocio, por partes.
+ *    Altas con cantidad, sumar y fijar total y, si se quiere, proveedor y
+ *    costo del lote. Solo mientras el inventario inicial esté abierto.
+ *  - Conteo y ajustes ("count"): corregir lo que hay. Cada escaneo lleva un
+ *    motivo; lo que sube entra como ajuste con el último costo del producto.
+ *    No da de alta productos (eso va en Compras o en Inventario).
+ */
+export type ScanVariant = 'initial' | 'count'
+
+/** Motivos frecuentes de un conteo o ajuste; "Otro" deja escribirlo. */
+const REASONS = ['Conteo físico', 'Merma', 'Producto dañado', 'Error de captura', 'Regalo o promoción'] as const
+const OTHER = '__otro__'
+
 function loadPref(key: string, fallback: string) {
   try {
     return localStorage.getItem(key) ?? fallback
@@ -49,11 +65,44 @@ function savePref(key: string, value: string) {
   }
 }
 
-export function ScanPage() {
+export function ScanPage({ variant }: { variant: ScanVariant }) {
+  const settings = useSettings()
+  if (variant === 'initial' && !settings.initialLoadOpen) return <InitialLoadClosed />
+  // key: al cambiar de pantalla se empieza de cero (modo, motivo, sesión).
+  return <ScanScreen key={variant} variant={variant} />
+}
+
+function InitialLoadClosed() {
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <h1 className="hidden text-title-lg uppercase md:block">Inventario inicial</h1>
+      <div className="card flex max-w-2xl flex-col gap-3 p-5">
+        <p className="text-heading">El inventario inicial ya se cerró.</p>
+        <p className="text-ink-muted">
+          La mercancía nueva entra por <Link to="/compras" className="underline">Compras</Link> y las correcciones por{' '}
+          <Link to="/conteo" className="underline">Conteo y ajustes</Link>. Si hace falta, se vuelve a abrir en{' '}
+          <Link to="/configuracion" className="underline">Configuración</Link>.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function ScanScreen({ variant }: { variant: ScanVariant }) {
+  const counting = variant === 'count'
+  const modeKey = counting ? 'hachiko.mode.conteo' : 'hachiko.mode'
   const { products, recent, online } = useInventory()
   const languages = useLanguageLookup()
   const [code, setCode] = useState('')
-  const [mode, setModeState] = useState<ScanMode>(() => (loadPref('hachiko.mode', 'add') === 'set' ? 'set' : 'add'))
+  // En Conteo lo normal es fijar el total que se contó.
+  const [mode, setModeState] = useState<ScanMode>(() => {
+    const saved = loadPref(modeKey, counting ? 'set' : 'add')
+    return saved === 'set' ? 'set' : 'add'
+  })
+  // Conteo y ajustes: motivo de la sesión (obligatorio).
+  const [reasonChoice, setReasonChoice] = useState('')
+  const [otherReason, setOtherReason] = useState('')
+  const reason = counting ? (reasonChoice === OTHER ? otherReason.trim() : reasonChoice) : ''
   const [qtyText, setQtyText] = useState(() => loadPref('hachiko.qty', '1'))
   const [feedback, setFeedback] = useState<Feedback>({ kind: 'idle' })
   const [modal, setModal] = useState<{ barcode: string | null; defaultQuantity: number } | null>(null)
@@ -77,7 +126,9 @@ export function ScanPage() {
 
   const unitCost = parseMoney(costText)
   const costValid = !Number.isNaN(unitCost)
-  const ctx: ScanContext = { location, supplierId, unitCost: costValid ? unitCost : null, sessionId }
+  const ctx: ScanContext = counting
+    ? { location, supplierId: null, unitCost: null, sessionId: null, reason }
+    : { location, supplierId, unitCost: costValid ? unitCost : null, sessionId }
 
   function newSession(patch: () => void) {
     patch()
@@ -103,7 +154,7 @@ export function ScanPage() {
 
   function setMode(m: ScanMode) {
     setModeState(m)
-    savePref('hachiko.mode', m)
+    savePref(modeKey, m)
     focusScan()
   }
 
@@ -119,7 +170,12 @@ export function ScanPage() {
   async function processScan(raw: string, qtyStr = qtyText, lots?: LotPick[]) {
     const barcode = normalizeBarcode(raw)
     if (!barcode) return
-    if (!costValid) {
+    if (counting && !reason) {
+      sounds.error()
+      setFeedback({ kind: 'error', title: 'Elige el motivo', detail: 'Cada conteo o ajuste lleva su motivo (conteo físico, merma, dañado…).' })
+      return
+    }
+    if (!counting && !costValid) {
       sounds.error()
       setFeedback({ kind: 'error', title: 'Costo inválido', detail: 'Corrige el costo de la sesión (o déjalo vacío para usar el último de cada producto).' })
       return
@@ -146,6 +202,15 @@ export function ScanPage() {
       setFeedback({ kind: 'error', title: 'No se pudo registrar el escaneo', detail: out.message })
       return
     }
+    if (out.type === 'not_found' && counting) {
+      sounds.error()
+      setFeedback({
+        kind: 'error',
+        title: 'Este código no está dado de alta',
+        detail: `${out.barcode}: si es mercancía nueva, regístrala en Compras (ahí mismo se da de alta).`,
+      })
+      return
+    }
     if (out.type === 'not_found') {
       sounds.newProduct()
       setFeedback({ kind: 'idle' })
@@ -154,7 +219,7 @@ export function ScanPage() {
     }
     if (out.pending) sounds.pending()
     else sounds.success()
-    const where = location === 'warehouse' ? ' en bodega' : ''
+    const where = `${location === 'warehouse' ? ' en bodega' : ''}${counting ? ` · ${reason}` : ''}`
     setFeedback({
       kind: out.pending ? 'pending' : 'success',
       title: out.pending ? `Guardado sin conexión (pendiente)${where}` : `${out.mode === 'add' ? 'Sumado' : 'Total fijado'}${where}`,
@@ -242,20 +307,22 @@ export function ScanPage() {
     <div className="flex min-h-full flex-col gap-4 p-4 md:p-6">
       {/* Título y acciones de página */}
       <div className="flex flex-wrap items-center gap-3 max-md:justify-end">
-        <h1 className="hidden mr-auto text-title-lg uppercase md:block">Agregar</h1>
-        <button
-          type="button"
-          onClick={() => {
-            setFeedback({ kind: 'idle' })
-            setModal({ barcode: null, defaultQuantity: qtyValid && quantity > 0 ? quantity : 1 })
-          }}
-          disabled={!online}
-          title={online ? undefined : 'Se necesita conexión para generar un código interno'}
-          className="btn btn-primary"
-        >
-          <Icon name="plus" />
-          Producto sin código
-        </button>
+        <h1 className="hidden mr-auto text-title-lg uppercase md:block">{counting ? 'Conteo y ajustes' : 'Inventario inicial'}</h1>
+        {!counting && (
+          <button
+            type="button"
+            onClick={() => {
+              setFeedback({ kind: 'idle' })
+              setModal({ barcode: null, defaultQuantity: qtyValid && quantity > 0 ? quantity : 1 })
+            }}
+            disabled={!online}
+            title={online ? undefined : 'Se necesita conexión para generar un código interno'}
+            className="btn btn-primary"
+          >
+            <Icon name="plus" />
+            Producto sin código
+          </button>
+        )}
         {online && !exporting && (
           <MoreMenu
             items={[
@@ -267,7 +334,28 @@ export function ScanPage() {
       </div>
       {!online && (
         <p className="-mt-2 text-right text-caption text-ink-subtle">
-          Sin conexión: exportar y dar de alta productos sin código necesitan internet.
+          {counting
+            ? 'Sin conexión: se puede sumar o subir el total; bajarlo (elegir el lote) y exportar necesitan internet.'
+            : 'Sin conexión: exportar y dar de alta productos sin código necesitan internet.'}
+        </p>
+      )}
+      {counting ? (
+        <p className="notice bg-info-bg text-info-fg">
+          <Icon name="alert" className="mt-0.5" />
+          <span>
+            Para corregir lo que hay: conteos físicos, merma, dañados, errores. Si llegó mercancía, regístrala en{' '}
+            <Link to="/compras" className="underline">Compras</Link>.
+          </span>
+        </p>
+      ) : (
+        <p className="notice bg-info-bg text-info-fg">
+          <Icon name="alert" className="mt-0.5" />
+          <span>
+            <strong className="font-semibold">El primer conteo del negocio.</strong> Se puede hacer por partes (por anaquel,
+            por categoría, tienda y bodega): lo contado se queda guardado. Cuando terminen, un administrador lo cierra en{' '}
+            <Link to="/configuracion" className="underline">Configuración</Link>; después la mercancía nueva entra por Compras y
+            las correcciones por Conteo y ajustes.
+          </span>
         </p>
       )}
 
@@ -282,6 +370,56 @@ export function ScanPage() {
               <span className="field-label">Contando en</span>
               <LocationSelect value={location} onChange={(l) => newSession(() => setLocation(l))} label="Contando en" />
             </div>
+            {counting ? (
+              <>
+                <div className="min-w-56">
+                  <label className="field-label" htmlFor="scan-reason">Motivo *</label>
+                  <select
+                    id="scan-reason"
+                    value={reasonChoice}
+                    onChange={(e) => {
+                      setReasonChoice(e.target.value)
+                      if (e.target.value !== OTHER) focusScan()
+                    }}
+                    aria-invalid={!reason}
+                    className={`field w-full cursor-pointer ${reason ? '' : 'border-warning-solid'}`}
+                  >
+                    <option value="" disabled>
+                      Elige el motivo
+                    </option>
+                    {REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                    <option value={OTHER}>Otro…</option>
+                  </select>
+                </div>
+                {reasonChoice === OTHER && (
+                  <div className="min-w-56 flex-1">
+                    <label className="field-label" htmlFor="scan-reason-other">¿Cuál?</label>
+                    <input
+                      id="scan-reason-other"
+                      value={otherReason}
+                      onChange={(e) => setOtherReason(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), focusScan())}
+                      autoFocus
+                      autoComplete="off"
+                      placeholder="Ej. Devolución al proveedor"
+                      className="field"
+                    />
+                  </div>
+                )}
+                <p className="basis-full text-caption text-ink-muted">
+                  {location === 'warehouse' ? (
+                    <span className="font-medium text-warning-fg">Estás contando la BODEGA. </span>
+                  ) : null}
+                  Cada escaneo queda como ajuste con este motivo. Si la cantidad sube, las piezas entran con el último costo y
+                  proveedor del producto; si baja, te pediremos de qué lote salen.
+                </p>
+              </>
+            ) : (
+              <>
             <div className="min-w-56 flex-1">
               <label className="field-label" htmlFor="scan-supplier">Proveedor</label>
               <SupplierSelect
@@ -317,6 +455,8 @@ export function ScanPage() {
               {unitCost != null && costValid ? `a ${formatMoney(unitCost)} c/u` : 'con su último costo'}.
               {mode === 'set' && ' Si "fijar total" baja la cantidad, te pediremos de qué lote salen las piezas.'}
             </p>
+              </>
+            )}
           </div>
 
           {/* Escaneo */}
@@ -529,7 +669,7 @@ export function ScanPage() {
           productName={lotChoice.product.name}
           location={location}
           remove={lotChoice.remove}
-          purpose="Fijar total"
+          purpose={counting ? `Conteo · ${reason}` : 'Fijar total'}
           onCancel={() => {
             setLotChoice(null)
             setFeedback({ kind: 'error', title: 'Escaneo cancelado', detail: 'No se cambió la cantidad.' })

@@ -4,6 +4,7 @@ import { FiltersButton } from '../components/FiltersButton'
 import { Icon } from '../components/Icon'
 import { LanguageTag, languageSearchText } from '../components/LanguageTag'
 import { MoreMenu } from '../components/MoreMenu'
+import { NewProductDialog } from '../components/NewProductDialog'
 import { ProductEditModal } from '../components/ProductEditModal'
 import { ProductImage } from '../components/ProductImage'
 import { Segmented } from '../components/Segmented'
@@ -67,6 +68,8 @@ export function InventoryPage() {
   const [scope, setScope] = useState<StockScope>('total')
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [created, setCreated] = useState<string | null>(null)
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'name', dir: 1 })
   const [limit, setLimit] = useState(PAGE)
 
@@ -221,6 +224,12 @@ export function InventoryPage() {
           ))}
         </div>
         {isAdmin && (
+          <button type="button" onClick={() => setCreating(true)} className="btn btn-primary">
+            <Icon name="plus" />
+            <span className="max-md:sr-only">Nuevo producto</span>
+          </button>
+        )}
+        {isAdmin && (
           <MoreMenu
             items={[
               { label: 'Movimiento de bodega', icon: 'swap', to: '/movimiento-bodega' },
@@ -234,6 +243,13 @@ export function InventoryPage() {
           />
         )}
       </div>
+
+      {created && (
+        <p className="notice bg-success-bg text-success-fg" role="status">
+          <Icon name="check" className="mt-0.5" />
+          {created}
+        </p>
+      )}
 
       {exportError && (
         <p className="notice bg-danger-bg text-danger-fg">
@@ -391,6 +407,19 @@ export function InventoryPage() {
             Mostrar más
           </button>
         </div>
+      )}
+
+      {creating && (
+        <NewProductDialog
+          onCancel={() => setCreating(false)}
+          onSaved={(out) => {
+            setCreating(false)
+            setCreated(
+              `${out.existed ? 'Ya existía' : out.pending ? 'Guardado sin conexión (pendiente)' : 'Se dio de alta'}: ${out.product.name} (${out.product.barcode}). ` +
+                'Si no lleva inventario (comida, torneos), márcalo así con el lápiz.',
+            )
+          }}
+        />
       )}
 
       {editing && (

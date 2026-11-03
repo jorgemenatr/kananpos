@@ -26,7 +26,9 @@ function describeQueueItem(item: QueueItem) {
     case 'create':
       return `Alta: ${item.input.name} (${item.input.barcode ?? internalCodeLabel()})`
     case 'scan':
-      return `Escaneo ${item.barcode} (${item.mode === 'add' ? '+' : '='}${item.quantity})${item.ctx?.location === 'warehouse' ? ' en bodega' : ''}`
+      return `${item.ctx?.reason ? 'Conteo' : 'Escaneo'} ${item.barcode} (${item.mode === 'add' ? '+' : '='}${item.quantity})${item.ctx?.location === 'warehouse' ? ' en bodega' : ''}${item.ctx?.reason ? ` · ${item.ctx.reason}` : ''}`
+    case 'purchase':
+      return `Compra a ${item.purchase.supplierName} (${item.purchase.items.reduce((n, i) => n + i.quantity, 0)} pzas)${item.purchase.location === 'warehouse' ? ' en bodega' : ''}`
     case 'sale':
       return `Venta sin folio aún (${item.sale.customerName ?? 'sin cliente'}, ${item.sale.items.reduce((n, i) => n + i.quantity, 0)} pzas)`
     default:

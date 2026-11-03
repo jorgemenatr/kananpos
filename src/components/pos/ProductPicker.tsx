@@ -14,6 +14,8 @@ interface Props {
   onPick: (p: CachedProduct) => void
   /** Código escaneado que no es de ningún producto; true si se usó (p. ej. código de cliente). */
   onOtherCode?: (code: string) => boolean
+  /** Enter con algo que no es de ningún producto ni coincide con la búsqueda (p. ej. un código nuevo). */
+  onUnknownCode?: (code: string) => void
   disabled?: boolean
   /** Para usarlo fuera del mostrador (compras, movimiento de bodega). */
   id?: string
@@ -39,6 +41,7 @@ export function ProductPicker({
   available,
   onPick,
   onOtherCode,
+  onUnknownCode,
   disabled,
   id = 'pos-product',
   label = 'Agregar producto: escanea el código o busca por nombre',
@@ -91,6 +94,11 @@ export function ProductPicker({
       return
     }
     if (results[active]) return pick(results[active])
+    if (code && onUnknownCode) {
+      onUnknownCode(code)
+      setQuery('')
+      setActive(0)
+    }
   }
 
   return (

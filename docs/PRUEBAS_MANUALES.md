@@ -37,8 +37,8 @@ laptop). Así escaneas los códigos reales de los productos con la cámara del c
 - [ ] Con contraseña incorrecta aparece "Correo o contraseña incorrectos." y el foco queda
       en la contraseña.
 - [ ] Con la laptop sin internet, intenta iniciar sesión: aparece "Sin conexión a internet…".
-- [ ] Login correcto: llegas al Mostrador. En Inventario → Agregar, el cursor ya está en el
-      campo de escaneo (puedes escanear sin hacer clic).
+- [ ] Login correcto: llegas al Mostrador. En Inventario → Conteo y ajustes, el cursor ya
+      está en el campo de escaneo (puedes escanear sin hacer clic).
 - [ ] El encabezado muestra tu correo y el botón "Cerrar sesión".
 - [ ] Cierra la pestaña y vuelve a abrir la URL: sigues dentro sin volver a iniciar sesión.
 - [ ] "Cerrar sesión" te lleva al login con el cursor en la contraseña (el correo queda recordado).
@@ -203,14 +203,27 @@ Antes: aplica la migración `…20261019000100_lotes_ubicaciones.sql`.
 - [ ] Con un producto con 0 en tienda y piezas en bodega: en Inventario (en cualquier filtro)
       aparece como sin stock en tienda con "Hay N en bodega". En el Mostrador no deja
       agregarlo y el aviso dice cuántas hay en bodega.
-- [ ] Agregar: la sesión empieza en Tienda. Cambia a Bodega (el recuadro se pone amarillo),
-      escanea 3 veces un código: Bodega +3 en un solo lote. Deshacer quita la última.
+- [ ] Inventario inicial: la sesión empieza en Tienda. Cambia a Bodega (el recuadro se pone
+      amarillo), escanea 3 veces un código: Bodega +3 en un solo lote. Deshacer quita la última.
 - [ ] "Fijar total" a menos piezas en un producto con varios lotes: pide elegir el lote.
 - [ ] Editar producto → Ajustar existencias → Bodega, cantidad menor: si hay varios lotes
       pide elegir; el lote elegido baja y la tienda no cambia.
 - [ ] Con el usuario de mostrador no aparecen Compras ni Movimiento de bodega.
 - [ ] Compras: abre la compra y "Corregir" el costo mientras está intacta; después de moverla
       solo deja cambiar folio y notas, y "Cancelar compra" ya no aparece.
+
+- [ ] Compras: elige proveedor, escanea dos veces el mismo producto: un solo renglón con
+      cantidad 2. Escanea un código que no existe: abre "Producto nuevo" sin cantidad
+      inicial; al guardarlo aparece como renglón con el costo capturado.
+- [ ] Compras sin Wi-Fi: registra la compra. Dice "guardada sin conexión", aparece arriba de
+      la lista como "Pendiente de sincronizar" y las piezas ya se ven en Inventario. Al
+      volver el internet se registra sola (una sola vez) y queda en la lista normal.
+- [ ] Conteo y ajustes: sin motivo, escanear dice "Elige el motivo". Con "Merma" y fijar
+      total a menos piezas: pide el lote. En Historial aparece como Ajuste con
+      "Motivo: Merma". Un código que no existe avisa que se registre en Compras.
+- [ ] Configuración → Inventario inicial → Cerrar: desaparece "Inventario inicial" del menú,
+      "Nuevo producto" (Inventario) ya no pide cantidad inicial y `/inventario-inicial`
+      dice que ya se cerró. "Volver a abrir" lo regresa.
 
 ## 14. Código de cliente
 Antes: aplica la migración `…20261030000400_codigo_clientes.sql`.
