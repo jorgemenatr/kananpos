@@ -315,8 +315,7 @@ nunca se borra un movimiento.
 ## Puntos de liga
 
 Cada cliente tiene un total de **puntos de liga**. Se agregan desde el perfil del cliente
-o desde **Clientes** (botón *Agregar puntos de liga* para varios a la vez, o el **+** de
-cada renglón). Cada registro guarda cantidad, comentario, fecha y quién los asignó (el
+o desde **Clientes** (menú **⋯** → *Agregar puntos de liga*, para uno o varios a la vez). Cada registro guarda cantidad, comentario, fecha y quién los asignó (el
 usuario con sesión iniciada). Para corregir, se registran puntos negativos.
 
 ## Catálogo TCG

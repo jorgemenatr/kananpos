@@ -128,8 +128,8 @@ export function PreventasPage() {
         </p>
       )}
 
-      <div className="grid flex-1 items-start gap-4 lg:grid-cols-[340px_1fr]">
-        <aside className={`card flex flex-col ${selectedId ? 'max-lg:hidden' : ''}`}>
+      <div className="grid flex-1 grid-cols-1 items-start gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <aside className={`card flex min-w-0 flex-col ${selectedId ? 'max-lg:hidden' : ''}`}>
           <div className="flex flex-col gap-3 border-b border-line p-3">
             <label className="search-field w-full">
               <Icon name="search" />
