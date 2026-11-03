@@ -41,13 +41,23 @@ export function App() {
             {/* La app abre en el Mostrador. */}
             <Route index element={<Navigate to="/mostrador" replace />} />
             <Route
-              path="agregar"
+              path="inventario-inicial"
               element={
                 <ProtectedRoute roles={['admin']}>
-                  <ScanPage />
+                  <ScanPage variant="initial" />
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="conteo"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <ScanPage variant="count" />
+                </ProtectedRoute>
+              }
+            />
+            {/* "Agregar" se dividió en Inventario inicial, Compras y Conteo y ajustes. */}
+            <Route path="agregar" element={<Navigate to="/conteo" replace />} />
             <Route path="inventario" element={<InventoryPage />} />
             <Route
               path="compras"

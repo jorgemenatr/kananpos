@@ -125,9 +125,34 @@ export interface ScanContext {
   unitCost: number | null
   /** Los escaneos de la misma sesión suman al mismo lote (uno por producto). */
   sessionId: string | null
+  /**
+   * Conteo y ajustes: motivo del conteo (merma, conteo físico…). Con motivo el
+   * movimiento es un ajuste y lo que sube entra con el último costo; sin motivo
+   * es un escaneo del inventario inicial. Los escaneos anteriores no lo traen.
+   */
+  reason?: string | null
 }
 
 const DEFAULT_CONTEXT: ScanContext = { location: 'store', supplierId: null, unitCost: null, sessionId: null }
+
+/** Compra capturada (se registra con register_purchase; sin conexión, va a la cola). */
+export interface PurchaseDraft {
+  /** Lo genera la app: si se reintenta, no se duplica. */
+  id: string
+  supplierId: string
+  /** Solo para mostrar mientras está en la cola. */
+  supplierName: string
+  location: StockLocation
+  folio: string
+  note: string
+  /**
+   * productId puede ser "pending:…" si el producto se dio de alta sin conexión:
+   * al sincronizar se busca por código (el alta va antes en la cola).
+   */
+  items: { productId: string; barcode: string; name: string; quantity: number; unitCost: number }[]
+}
+
+export type PurchaseOutcome = { type: 'ok'; pending: boolean } | { type: 'error'; message: string }
 
 export type QueueItem =
   // ctx falta en los escaneos que ya estaban en la cola antes de las ubicaciones (tienda).
@@ -135,6 +160,8 @@ export type QueueItem =
   | { kind: 'create'; opId: string; createdAt: string; input: CreateInput; imagePath: string | null }
   | { kind: 'undo'; opId: string; createdAt: string; movementId: string; barcode: string }
   | { kind: 'sale'; opId: string; createdAt: string; sale: SaleInput }
+  /** opId = id de la compra. */
+  | { kind: 'purchase'; opId: string; createdAt: string; purchase: PurchaseDraft }
 
 export interface RecentEntry {
   /** = client_op_id de la operación */
@@ -277,6 +304,7 @@ function errorMessage(e: unknown) {
 
 function queueBarcodes(q: QueueItem): string[] {
   if (q.kind === 'sale') return q.sale.items.map((i) => i.barcode)
+  if (q.kind === 'purchase') return q.purchase.items.map((i) => i.barcode)
   const b = q.kind === 'create' ? q.input.barcode : q.barcode
   return b ? [b] : []
 }
@@ -291,6 +319,9 @@ function scanParams(ctx: ScanContext) {
     p_supplier_id: ctx.supplierId,
     p_unit_cost: ctx.unitCost,
     p_session_id: ctx.sessionId,
+    // Solo si trae motivo: un escaneo del inventario inicial funciona igual
+    // en una base que aún no tiene la migración 20261103000100.
+    ...(ctx.reason ? { p_reason: ctx.reason } : {}),
   }
 }
 
@@ -785,6 +816,58 @@ class InventoryStore {
     })
   }
 
+  // ---------- compras ----------
+  /**
+   * Registra una compra. Sin conexión se guarda en la cola (el id de la compra
+   * evita duplicarla) y las piezas se suman de una vez a la copia local.
+   */
+  registerPurchase(draft: PurchaseDraft): Promise<PurchaseOutcome> {
+    return this.run(async () => {
+      if (draft.items.length === 0) return { type: 'error', message: 'La compra no tiene productos' }
+      if (await this.flushBeforeOnline()) {
+        try {
+          await this.callRegisterPurchase(draft)
+          return { type: 'ok', pending: false }
+        } catch (e) {
+          if (e instanceof PermanentError || (!isNetworkError(e) && !isAuthError(e))) {
+            return { type: 'error', message: errorMessage(e) }
+          }
+          if (isNetworkError(e)) this.markOffline()
+          // Se encola con el mismo id: si sí llegó al servidor, no se duplica.
+        }
+      }
+      this.enqueue({ kind: 'purchase', opId: draft.id, createdAt: new Date().toISOString(), purchase: draft })
+      for (const i of draft.items) {
+        const p = this.state.products[i.barcode]
+        if (p) this.putProduct(withQtyAt(p, draft.location, qtyAt(p, draft.location) + i.quantity))
+      }
+      return { type: 'ok', pending: true }
+    })
+  }
+
+  private async callRegisterPurchase(draft: PurchaseDraft) {
+    const items = draft.items.map((i) => {
+      if (!i.productId.startsWith('pending:')) return i
+      // Alta hecha sin conexión: ya se sincronizó (va antes en la cola) y la copia local tiene su id real.
+      const p = this.state.products[i.barcode]
+      if (!p || p.pending || p.id.startsWith('pending:')) throw new PermanentError(`${i.name} no se pudo dar de alta en el servidor`)
+      return { ...i, productId: p.id }
+    })
+    const { error } = await supabase.rpc('register_purchase', {
+      p_purchase_id: draft.id,
+      p_supplier_id: draft.supplierId,
+      p_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity, unit_cost: i.unitCost })),
+      p_location: draft.location,
+      p_folio: draft.folio.trim() || null,
+      p_note: draft.note.trim() || null,
+    })
+    if (error) {
+      if (!isNetworkError(error) && !isAuthError(error)) throw new PermanentError(error.message)
+      throw error
+    }
+    this.markOnline()
+  }
+
   // ---------- venta (mostrador) ----------
   private applyTicketResult(res: TicketRpcResult, opId: string) {
     for (const p of res.products) this.putServerProduct(toCached(p), opId)
@@ -1038,6 +1121,11 @@ class InventoryStore {
     }
     if (item.kind === 'create') {
       await this.callCreate(item.input, item.imagePath, item.opId)
+      return
+    }
+    if (item.kind === 'purchase') {
+      // Las piezas ya están sumadas en la copia local desde que se encoló.
+      await this.callRegisterPurchase(item.purchase)
       return
     }
     if (item.kind === 'sale') {

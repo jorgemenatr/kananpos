@@ -221,7 +221,7 @@ const tables: Record<string, Row[]> = {
     { id: COUNTER_ID, email: 'mostrador@demo.mx', full_name: 'Mariana López Gutiérrez', role: 'mostrador', created_at: ago(9999) },
     { id: 'demo-3', email: 'fines.de.semana.turno.extra@demo.mx', full_name: null, role: 'mostrador', created_at: ago(999) },
   ],
-  app_settings: [{ id: true, business_name: 'Demo', internal_code_prefix: 'DEMO', combo_drinks_category: 'Accesorios' }],
+  app_settings: [{ id: true, business_name: 'Demo', internal_code_prefix: 'DEMO', combo_drinks_category: 'Accesorios', initial_load_open: true }],
   product_categories: [
     { id: 'k1', parent_id: null, name: 'TCG', catalog_sources: [], sort_order: 1 },
     { id: 'k1a', parent_id: 'k1', name: 'Pokémon', catalog_sources: ['pokemon'], sort_order: 1 },
@@ -354,7 +354,105 @@ tables.ticket_payments.push({ id: 'pre1-pay', ticket_id: 'pre1', method: 'cash',
 // ---------- RPC ----------
 let nextFolio = 141
 
+/** Movimiento de inventario simulado (escaneos, altas, compras). */
+function demoMovement(p: Product, location: string, delta: number, type: string, note: string | null) {
+  const store = location !== 'warehouse'
+  if (store) p.quantity += delta
+  else p.warehouse_quantity = (p.warehouse_quantity ?? 0) + delta
+  const id = crypto.randomUUID()
+  movements.unshift({
+    id,
+    created_at: new Date().toISOString(),
+    type,
+    delta,
+    quantity_after: store ? p.quantity : p.warehouse_quantity,
+    note,
+    reverts_movement_id: null,
+    product_id: p.id,
+    barcode: p.barcode,
+    product_name: p.name,
+    old_barcode: null,
+    cancelled_by_movement_id: null,
+    cancelled_at: null,
+    cancel_note: null,
+    location,
+    ...by,
+  })
+  return { status: 'ok', movement_id: id, movement_type: type, location, delta, quantity_after: store ? p.quantity : p.warehouse_quantity, product: p }
+}
+
+const initialLoadOpen = () => tables.app_settings[0]?.initial_load_open !== false
+
 const rpcs: Record<string, (args: Row) => unknown> = {
+  register_scan: (a) => {
+    const p = products.find((x) => x.barcode === String(a.p_barcode).trim())
+    if (!p) return { status: 'not_found', barcode: a.p_barcode }
+    const reason = typeof a.p_reason === 'string' ? a.p_reason.trim() : ''
+    if (!reason && !initialLoadOpen()) throw new Error('El inventario inicial ya se cerró: indica el motivo del conteo o ajuste')
+    const location = String(a.p_location ?? 'store')
+    const current = location === 'warehouse' ? (p.warehouse_quantity ?? 0) : p.quantity
+    const next = a.p_mode === 'add' ? current + Number(a.p_quantity) : Number(a.p_quantity)
+    const type = reason ? 'adjustment' : a.p_mode === 'add' ? 'scan_add' : 'set_total'
+    const note = reason ? `${a.p_mode === 'add' ? 'Conteo (sumar)' : 'Conteo (fijar total)'}. Motivo: ${reason}` : null
+    return demoMovement(p, location, next - current, type, note)
+  },
+  create_product: (a) => {
+    const barcode = a.p_barcode ? String(a.p_barcode).trim() : `DEMO-${String(products.length + 1).padStart(5, '0')}`
+    const existing = products.find((x) => x.barcode === barcode)
+    if (existing) return { status: 'exists', product: existing }
+    const qty = Number(a.p_initial_quantity ?? 0)
+    if (qty > 0 && !initialLoadOpen()) throw new Error('El inventario inicial ya se cerró: la mercancía nueva entra por Compras')
+    const p = {
+      ...products[2],
+      id: crypto.randomUUID(),
+      barcode,
+      name: String(a.p_name),
+      price: Number(a.p_price),
+      cost: a.p_cost == null ? null : Number(a.p_cost),
+      category: (a.p_category as string) || null,
+      quantity: 0,
+      warehouse_quantity: 0,
+      image_url: null,
+      is_internal_code: !a.p_barcode,
+      is_preorder: false,
+      is_combo: false,
+      language: (a.p_language as Product['language']) ?? null,
+      created_at: new Date().toISOString(),
+    } as Product
+    products.push(p)
+    return demoMovement(p, String(a.p_location ?? 'store'), qty, 'initial_count', 'Alta de producto')
+  },
+  register_purchase: (a) => {
+    if (purchases.some((x) => x.id === a.p_purchase_id)) return { status: 'duplicate' }
+    const items = (a.p_items as { product_id: string; quantity: number; unit_cost: number }[]) ?? []
+    const location = String(a.p_location ?? 'store')
+    const supplier = tables.suppliers.find((x) => x.id === a.p_supplier_id)
+    for (const it of items) {
+      const p = products.find((x) => x.id === it.product_id)
+      if (p) demoMovement(p, location, it.quantity, 'purchase', `Compra · ${supplier?.name ?? ''}`)
+    }
+    const purchase = {
+      id: a.p_purchase_id,
+      created_at: new Date().toISOString(),
+      supplier_id: a.p_supplier_id,
+      supplier_name: supplier?.name ?? '—',
+      location,
+      folio: a.p_folio ?? null,
+      note: a.p_note ?? null,
+      total: items.reduce((n, i) => n + i.quantity * i.unit_cost, 0),
+      status: 'active',
+      cancel_reason: null,
+      cancelled_at: null,
+      cancelled_by_name: null,
+      created_by: ADMIN_ID,
+      created_by_name: 'Admin Demo',
+      item_count: items.length,
+      piece_count: items.reduce((n, i) => n + i.quantity, 0),
+      is_intact: true,
+    }
+    purchases.unshift(purchase)
+    return { status: 'ok', purchase }
+  },
   catalog_status: () => ({ total: 0, updated_at: null, games: [] }),
   search_catalog: () => [],
   checkout_ticket: (a) => {
@@ -550,7 +648,12 @@ export async function demoFetch(input: RequestInfo | URL, init?: RequestInit): P
     const fn = rpcs[name]
     if (!fn) return notAvailable(name)
     const args = (await req.json().catch(() => ({}))) as Row
-    return json(fn(args))
+    try {
+      return json(fn(args))
+    } catch (e) {
+      // Como un raise exception de Postgres (no como falla de red).
+      return json({ code: '22023', message: (e as Error).message, details: null, hint: null }, 400)
+    }
   }
 
   if (path.startsWith('/rest/v1/')) {

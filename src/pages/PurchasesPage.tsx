@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LanguageTag, useLanguageLookup } from '../components/LanguageTag'
-import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { LocationSelect } from '../components/LocationSelect'
+import { ProductFormModal } from '../components/ProductFormModal'
 import { ProductImage } from '../components/ProductImage'
 import { SupplierSelect } from '../components/SupplierSelect'
 import { ProductPicker } from '../components/pos/ProductPicker'
 import { formatDateTime, formatInt, formatMoney, parseCount, parseMoney } from '../lib/format'
 import { getProduct } from '../lib/products'
-import { cancelPurchase, getPurchaseItems, listPurchases, registerPurchase, updatePurchase } from '../lib/purchases'
+import { isInternalCode } from '../lib/barcode'
+import { cancelPurchase, getPurchaseItems, listPurchases, updatePurchase } from '../lib/purchases'
 import { sounds } from '../lib/sounds'
 import { isNetworkError } from '../lib/supabase'
 import { LOCATION_LABELS, type PurchaseItemRow, type PurchaseRow, type StockLocation } from '../lib/types'
-import { inventoryStore, type CachedProduct } from '../store/inventoryStore'
+import { inventoryStore, tracksStock, type CachedProduct, type PurchaseDraft } from '../store/inventoryStore'
 import { useInventory } from '../store/useInventory'
 
 /*
@@ -21,6 +22,11 @@ import { useInventory } from '../store/useInventory'
  * (Tienda por defecto). Una compra se corrige (proveedor, costos) o se
  * cancela solo mientras ninguna de sus piezas se haya vendido, movido o
  * ajustado; folio y notas se pueden cambiar siempre.
+ *
+ * Se captura con el lector: escanear otra vez el mismo producto suma una
+ * pieza, y un código que no existe abre el alta ahí mismo (sin cantidad: las
+ * piezas entran con la compra). Sin conexión la compra se guarda en la cola y
+ * se registra sola al volver el internet.
  */
 
 interface Line {
@@ -36,9 +42,12 @@ interface Line {
 const errText = (e: unknown) => (isNetworkError(e) ? 'Sin conexión: intenta cuando vuelva el internet.' : (e as Error).message)
 
 export function PurchasesPage() {
-  const { products, online } = useInventory()
+  const { products, online, queue } = useInventory()
   const languages = useLanguageLookup()
   const [supplierId, setSupplierId] = useState<string | null>(null)
+  const [supplierName, setSupplierName] = useState('')
+  // Alta de un producto nuevo desde la compra (null = sin código: código interno).
+  const [creating, setCreating] = useState<{ barcode: string | null } | null>(null)
   const [location, setLocation] = useState<StockLocation>('store')
   const [folio, setFolio] = useState('')
   const [note, setNote] = useState('')
@@ -79,27 +88,49 @@ export function PurchasesPage() {
   )
   const total = rows.reduce((s, r) => s + (r.invalid ? 0 : r.qty * r.cost), 0)
   const pieces = rows.reduce((s, r) => s + (Number.isNaN(r.qty) ? 0 : r.qty), 0)
-  const canSave = online && !busy && supplierId !== null && rows.length > 0 && rows.every((r) => !r.invalid)
+  const canSave = !busy && supplierId !== null && rows.length > 0 && rows.every((r) => !r.invalid)
 
-  function add(p: CachedProduct) {
+  // Compras capturadas sin conexión que siguen en la cola.
+  const pending = useMemo(() => queue.flatMap((q) => (q.kind === 'purchase' ? [q.purchase] : [])), [queue])
+  // Al sincronizarse alguna, se recarga la lista.
+  const pendingCount = useRef(pending.length)
+  useEffect(() => {
+    if (pending.length < pendingCount.current) loadHistory()
+    pendingCount.current = pending.length
+  }, [pending.length, loadHistory])
+
+  const focusPicker = () => setTimeout(() => pickerRef.current?.focus(), 0)
+
+  /** cost: el del alta recién hecha; si no, se precarga el último del producto. */
+  function add(p: CachedProduct, cost?: number | null) {
     setDone(null)
     setError(null)
-    if (p.pending || p.id.startsWith('pending:')) {
+    if (!tracksStock(p)) {
       sounds.error()
-      setError(`${p.name} aún no se sincroniza. Espera a tener conexión.`)
+      setError(`${p.name} no lleva inventario: no se compra.`)
       return
     }
     sounds.success()
+    focusPicker()
     const key = crypto.randomUUID()
-    setLines((ls) => [...ls, { key, productId: p.id, barcode: p.barcode, name: p.name, imagePath: p.image_url, qtyText: '1', costText: '' }])
-    // El costo se precarga con el último del producto.
+    setLines((ls) => {
+      // Escanear otra vez el mismo producto suma una pieza a su renglón.
+      const existing = ls.find((l) => l.productId === p.id)
+      if (existing) {
+        const n = parseCount(existing.qtyText, 1)
+        return ls.map((l) => (l === existing ? { ...l, qtyText: String((Number.isNaN(n) ? 0 : n) + 1) } : l))
+      }
+      const costText = cost != null ? String(cost) : ''
+      return [...ls, { key, productId: p.id, barcode: p.barcode, name: p.name, imagePath: p.image_url, qtyText: '1', costText }]
+    })
+    if (cost != null || p.id.startsWith('pending:')) return
+    // El costo se precarga con el último del producto (solo si el renglón es nuevo).
     getProduct(p.id)
       .then((full) => {
         if (full?.cost == null) return
         setLines((ls) => ls.map((l) => (l.key === key && l.costText === '' ? { ...l, costText: String(full.cost) } : l)))
       })
-      .catch(() => undefined)
-    setTimeout(() => pickerRef.current?.focus(), 0)
+      .catch(() => undefined) // sin conexión: el costo se captura a mano
   }
 
   const patch = (key: string, p: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...p } : l)))
@@ -108,29 +139,38 @@ export function PurchasesPage() {
     if (!canSave || !supplierId) return
     setBusy(true)
     setError(null)
-    try {
-      await registerPurchase({
-        id: purchaseId,
-        supplierId,
-        location,
-        folio,
-        note,
-        items: rows.map((r) => ({ productId: r.productId, quantity: r.qty, unitCost: r.cost })),
-      })
-      sounds.success()
-      setDone(`Compra registrada: ${formatInt(pieces)} pzas por ${formatMoney(total)}, en ${LOCATION_LABELS[location].toLowerCase()}.`)
-      setLines([])
-      setFolio('')
-      setNote('')
-      setLocation('store')
-      setPurchaseId(crypto.randomUUID())
+    const draft: PurchaseDraft = {
+      id: purchaseId,
+      supplierId,
+      supplierName,
+      location,
+      folio,
+      note,
+      items: rows.map((r) => ({ productId: r.productId, barcode: r.barcode, name: r.name, quantity: r.qty, unitCost: r.cost })),
+    }
+    const out = await inventoryStore.registerPurchase(draft)
+    setBusy(false)
+    if (out.type === 'error') {
+      sounds.error()
+      setError(out.message)
+      return
+    }
+    if (out.pending) sounds.pending()
+    else sounds.success()
+    const summary = `${formatInt(pieces)} pzas por ${formatMoney(total)}, en ${LOCATION_LABELS[location].toLowerCase()}`
+    setDone(
+      out.pending
+        ? `Compra guardada sin conexión (${summary}). Las piezas ya cuentan aquí; se registra sola al volver el internet.`
+        : `Compra registrada: ${summary}.`,
+    )
+    setLines([])
+    setFolio('')
+    setNote('')
+    setLocation('store')
+    setPurchaseId(crypto.randomUUID())
+    if (!out.pending) {
       void inventoryStore.refreshProducts()
       loadHistory()
-    } catch (e) {
-      sounds.error()
-      setError(errText(e))
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -141,7 +181,8 @@ export function PurchasesPage() {
       {!online && (
         <p className="notice bg-warning-bg text-warning-fg">
           <Icon name="wifi-off" className="mt-0.5" />
-          Sin conexión: registrar compras necesita internet.
+          Sin conexión: la compra se guarda y se registra sola al volver el internet. Corregir o cancelar compras, y dar de alta
+          productos sin código, necesitan conexión.
         </p>
       )}
       {done && (
@@ -152,11 +193,30 @@ export function PurchasesPage() {
       )}
 
       <section className="card flex flex-col gap-4 p-5">
-        <h2 className="text-title">Nueva compra</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="mr-auto text-title">Nueva compra</h2>
+          <button
+            type="button"
+            onClick={() => setCreating({ barcode: null })}
+            disabled={!online}
+            title={online ? undefined : 'Se necesita conexión para generar un código interno'}
+            className="btn btn-secondary"
+          >
+            <Icon name="plus" />
+            Producto sin código
+          </button>
+        </div>
         <div className="grid gap-4 md:grid-cols-[1fr_12rem]">
           <div>
             <label className="field-label" htmlFor="pu-supplier">Proveedor *</label>
-            <SupplierSelect id="pu-supplier" value={supplierId} onChange={(id) => setSupplierId(id)} disabled={!online} />
+            <SupplierSelect
+              id="pu-supplier"
+              value={supplierId}
+              onChange={(id, s) => {
+                setSupplierId(id)
+                setSupplierName(s?.name ?? '')
+              }}
+            />
           </div>
           <div>
             <label className="field-label" htmlFor="pu-folio">Folio / factura</label>
@@ -177,18 +237,25 @@ export function PurchasesPage() {
           label="Agregar producto: escanea el código o busca por nombre"
           inputRef={pickerRef}
           products={products}
-          available={() => 1}
-          onPick={add}
-          disabled={!online}
+          available={(p) => (tracksStock(p) ? 1 : 0)}
+          unavailableText={() => 'Sin inventario (no se compra)'}
+          onPick={(p) => add(p)}
+          onUnknownCode={(code) => {
+            setDone(null)
+            setError(null)
+            if (isInternalCode(code)) {
+              sounds.error()
+              setError(`${code} no existe. Los códigos internos se generan con "Producto sin código".`)
+              return
+            }
+            sounds.newProduct()
+            setCreating({ barcode: code })
+          }}
           showPrice={false}
           availableText={(p) => `Tienda ${formatInt(p.quantity)} · Bodega ${formatInt(p.warehouse_quantity ?? 0)}`}
         />
         <p className="-mt-2 text-caption text-ink-subtle">
-          ¿El producto no existe todavía? Dalo de alta en{' '}
-          <Link to="/agregar" className="underline">
-            Agregar
-          </Link>{' '}
-          con cantidad inicial 0 y luego regístralo aquí.
+          Escanear otra vez un producto suma una pieza. Si el código no existe, se da de alta aquí mismo.
         </p>
 
         {rows.length > 0 && (
@@ -291,8 +358,22 @@ export function PurchasesPage() {
 
       <section className="card overflow-hidden">
         <h2 className="border-b border-line px-5 py-4 text-label tracking-wider text-ink-muted uppercase">Compras registradas</h2>
+        {pending.length > 0 && (
+          <ul className="divide-y divide-line border-b border-line">
+            {pending.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3">
+                <span className="font-medium">{p.supplierName || 'Proveedor'}</span>
+                {p.folio && <span className="font-mono text-caption text-ink-muted">{p.folio}</span>}
+                <span className="text-ink-muted">→ {LOCATION_LABELS[p.location]}</span>
+                <span className="text-ink-muted tabular-nums">{formatInt(p.items.reduce((n, i) => n + i.quantity, 0))} pzas</span>
+                <span className="text-heading tabular-nums">{formatMoney(p.items.reduce((n, i) => n + i.quantity * i.unitCost, 0))}</span>
+                <span className="badge badge-warning">Pendiente de sincronizar</span>
+              </li>
+            ))}
+          </ul>
+        )}
         {historyError && <p className="px-5 py-4 text-danger-fg">{historyError}</p>}
-        {history && history.length === 0 && <p className="px-5 py-8 text-center text-ink-subtle">Aún no hay compras.</p>}
+        {history && history.length === 0 && pending.length === 0 && <p className="px-5 py-8 text-center text-ink-subtle">Aún no hay compras.</p>}
         {history && history.length > 0 && (
           <ul className="divide-y divide-line">
             {history.map((p) => (
@@ -308,6 +389,23 @@ export function PurchasesPage() {
           </ul>
         )}
       </section>
+
+      {creating && (
+        <ProductFormModal
+          barcode={creating.barcode}
+          defaultQuantity={0}
+          allowInitialQuantity={false}
+          hint="Las piezas entran con esta compra: aquí solo se dan de alta los datos del producto."
+          onCancel={() => {
+            setCreating(null)
+            focusPicker()
+          }}
+          onSaved={(out, { cost }) => {
+            setCreating(null)
+            add(out.product, cost)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -27,6 +27,13 @@ $P -d ${DB}_sin -f supabase/tests/00_supabase_stub.sql
 for f in supabase/migrations/*.sql; do $P -d ${DB}_sin -f "$f"; done
 $P -d ${DB}_sin -f supabase/tests/sin_inventario_test.sql
 
+# Inventario inicial / Conteo y ajustes: en su propia base (cierra el
+# inventario inicial).
+$P -d postgres -c "drop database if exists ${DB}_conteo" -c "create database ${DB}_conteo"
+$P -d ${DB}_conteo -f supabase/tests/00_supabase_stub.sql
+for f in supabase/migrations/*.sql; do $P -d ${DB}_conteo -f "$f"; done
+$P -d ${DB}_conteo -f supabase/tests/conteo_inventario_inicial_test.sql
+
 # Categorías configurables: una base que ya estaba en uso (productos y
 # catálogo cargados) recibe la migración de categorías.
 CAT=20261020000200

@@ -73,6 +73,7 @@ export function ConfigPage() {
       <h1 className="hidden text-title-lg uppercase md:block">Configuración</h1>
 
       <BusinessCard />
+      <InitialLoadCard />
       <OperationCard />
 
       {saved && (
@@ -223,6 +224,56 @@ function BusinessCard() {
 }
 
 /** Día de operación (hora de corte) y preventas. */
+/**
+ * Inventario inicial: mientras está abierto se ve su sección (primer conteo,
+ * por partes). Cuando el cliente avisa que terminó, el admin lo cierra.
+ */
+function InitialLoadCard() {
+  const settings = useSettings()
+  const open = settings.initialLoadOpen
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function toggle() {
+    const ask = open
+      ? '¿Cerrar el inventario inicial?\n\nSe esconde la sección Inventario inicial. Desde ahí, la mercancía nueva entra solo por Compras y las correcciones por Conteo y ajustes (con motivo).'
+      : '¿Volver a abrir el inventario inicial?\n\nReaparece la sección para escanear y dar de alta productos con cantidad sin registrar una compra.'
+    if (!window.confirm(ask)) return
+    setSaving(true)
+    setMsg(null)
+    try {
+      await updateOperationSettings({ initialLoadOpen: !open })
+      setMsg({ ok: true, text: open ? 'Se cerró el inventario inicial.' : 'Se volvió a abrir el inventario inicial.' })
+    } catch (err) {
+      setMsg({ ok: false, text: errorText(err) })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="card flex flex-col gap-3 p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="mr-auto max-w-2xl">
+          <h2 className="flex flex-wrap items-center gap-2 text-title">
+            Inventario inicial
+            <span className={`badge ${open ? 'badge-warning' : 'badge-neutral'}`}>{open ? 'Abierto' : 'Cerrado'}</span>
+          </h2>
+          <p className="text-caption text-ink-muted">
+            {open
+              ? 'La sección Inventario inicial sirve para el primer conteo del negocio y se puede hacer por partes. Ciérralo cuando avisen que ya terminaron: la mercancía nueva entrará solo por Compras y las correcciones por Conteo y ajustes.'
+              : 'Ya terminó el primer conteo: la mercancía nueva entra por Compras y las correcciones por Conteo y ajustes, siempre con motivo. Ábrelo de nuevo solo si hace falta otra carga inicial.'}
+          </p>
+        </div>
+        <button type="button" onClick={() => void toggle()} disabled={saving} className={`btn ${open ? 'btn-primary' : 'btn-secondary'}`}>
+          {saving ? 'Guardando…' : open ? 'Cerrar inventario inicial' : 'Volver a abrir'}
+        </button>
+      </div>
+      {msg && <p className={`text-caption ${msg.ok ? 'text-success-fg' : 'text-danger-fg'}`}>{msg.text}</p>}
+    </section>
+  )
+}
+
 function OperationCard() {
   const settings = useSettings()
   const { tree } = useCategories()
