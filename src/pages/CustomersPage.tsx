@@ -155,15 +155,6 @@ export function CustomersPage() {
                     </span>
                   </p>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setPointsFor(c)}
-                  title="Agregar puntos de liga"
-                  aria-label={`Agregar puntos de liga a ${c.name}`}
-                  className="grid size-11 shrink-0 cursor-pointer place-items-center text-gold-ink hover:bg-gold-soft"
-                >
-                  <Icon name="trophy" />
-                </button>
               </li>
             ))}
           </ul>
@@ -195,25 +186,11 @@ export function CustomersPage() {
                     <GameTags games={c.games} max={4} />
                   </td>
                   <td className="h-row px-4 text-right whitespace-nowrap tabular-nums">
-                    <span className="inline-flex items-center gap-1">
-                      {!league ? '…' : (league.get(c.id) ?? 0) !== 0 ? (
-                        <span className="font-display font-extrabold text-gold-ink">{(league.get(c.id) ?? 0).toLocaleString('es-MX')}</span>
-                      ) : (
-                        <span className="text-ink-subtle">—</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setPointsFor(c)
-                        }}
-                        title="Agregar puntos de liga"
-                        aria-label={`Agregar puntos de liga a ${c.name}`}
-                        className="grid size-9 cursor-pointer place-items-center text-ink-muted hover:bg-gold-soft hover:text-gold-ink"
-                      >
-                        <Icon name="plus" />
-                      </button>
-                    </span>
+                    {!league ? '…' : (league.get(c.id) ?? 0) !== 0 ? (
+                      <span className="font-display font-extrabold text-gold-ink">{(league.get(c.id) ?? 0).toLocaleString('es-MX')}</span>
+                    ) : (
+                      <span className="text-ink-subtle">—</span>
+                    )}
                   </td>
                   <td className="h-row px-4 text-right whitespace-nowrap tabular-nums">
                     {!balances ? '…' : (balances.get(c.id)?.balance ?? 0) > 0 ? (

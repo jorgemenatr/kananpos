@@ -1,7 +1,7 @@
 import { Icon } from './Icon'
 
 /**
- * En el celular los filtros van plegados: este botón los muestra u oculta.
+ * En el celular los filtros van plegados: este botón (solo el ícono) los muestra u oculta.
  * El panel de filtros usa `open ? '' : 'max-md:hidden'`. En md+ no se ve.
  */
 export function FiltersButton({
@@ -20,11 +20,12 @@ export function FiltersButton({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      className={`btn btn-secondary self-start md:hidden ${className ?? ''}`}
+      aria-label={active ? 'Filtros (hay filtros activos)' : 'Filtros'}
+      title="Filtros"
+      className={`btn btn-secondary btn-icon relative self-start md:hidden ${className ?? ''}`}
     >
       <Icon name="filter" />
-      Filtros
-      {active && <span className="size-2 bg-brand" aria-label="(hay filtros activos)" />}
+      {active && <span className="absolute top-1 right-1 size-2 bg-brand" aria-hidden />}
     </button>
   )
 }

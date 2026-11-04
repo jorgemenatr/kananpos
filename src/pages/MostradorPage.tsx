@@ -56,6 +56,7 @@ export function MostradorPage() {
   const [comboFor, setComboFor] = useState<CachedProduct | null>(null)
   const [cancelling, setCancelling] = useState(false)
   const productRef = useRef<HTMLInputElement>(null)
+  const ticketRef = useRef<HTMLElement>(null)
 
   const productsById = useMemo(() => {
     const byId: Record<string, CachedProduct> = {}
@@ -63,7 +64,8 @@ export function MostradorPage() {
     return byId
   }, [products])
 
-  const focusProduct = useCallback(() => setTimeout(() => productRef.current?.focus(), 0), [])
+  // Sin mover la pantalla: en el celular el ticket ya se llevó a la vista (ver abajo).
+  const focusProduct = useCallback(() => setTimeout(() => productRef.current?.focus({ preventScroll: true }), 0), [])
 
   // Al entrar: ningún ticket abierto (se elige de la lista), tickets
   // compartidos al día, e inventario y clientes frescos si hay red.
@@ -77,10 +79,15 @@ export function MostradorPage() {
     // Solo al entrar a la página.
   }, [])
 
-  // Cambiar de ticket reinicia el cobro.
+  // Cambiar de ticket reinicia el cobro. En pantallas angostas la lista de
+  // tickets va arriba: al crear o elegir uno, la pantalla baja hasta él.
   useEffect(() => {
     setNotice(null)
-    if (activeId) focusProduct()
+    if (!activeId) return
+    if (window.matchMedia('(max-width: 63.99rem)').matches) {
+      setTimeout(() => ticketRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+    }
+    focusProduct()
   }, [activeId, focusProduct])
 
   // Depende de los tickets: lo apartado cambia al agregar o cobrar.
@@ -184,7 +191,7 @@ export function MostradorPage() {
   if (legacyPreorder) return <Navigate to={`/preventas?id=${legacyPreorder}`} replace />
 
   return (
-    <div className="flex min-h-full flex-col gap-4 p-4 md:p-6">
+    <div className="pos-compact flex min-h-full min-w-0 flex-col gap-4 p-4 md:p-6">
       <h1 className="hidden text-title-lg uppercase md:block">Mostrador</h1>
 
       {!online && (
@@ -239,8 +246,9 @@ export function MostradorPage() {
         </div>
       )}
 
-      <div className="grid flex-1 items-start gap-4 lg:grid-cols-[280px_1fr]">
-        <aside className="flex flex-col gap-4">
+      {/* min-w-0: nada dentro de las columnas puede ensanchar la pantalla. */}
+      <div className="grid flex-1 grid-cols-1 items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="flex min-w-0 flex-col gap-4">
           {/* Tickets abiertos (de todos los dispositivos) */}
           <div className="card flex flex-col">
             <h2 className="flex items-center justify-between border-b border-line px-4 py-3 text-label uppercase tracking-wider text-ink-muted">
@@ -269,7 +277,7 @@ export function MostradorPage() {
         </aside>
 
         {!active ? (
-          <section className="card flex min-h-80 flex-col items-center justify-center gap-3 p-8 text-center">
+          <section className="card flex min-h-80 min-w-0 flex-col items-center justify-center gap-3 p-8 text-center">
             <Icon name="receipt" size={40} className="text-ink-subtle" />
             <p className="text-title text-ink">{tickets.length > 0 ? 'Elige un ticket abierto o crea uno nuevo' : 'Abre un ticket para empezar a vender'}</p>
             <p className="text-ink-subtle">Al cobrarlo recibe su folio (1, 2, 3…).</p>
@@ -279,8 +287,8 @@ export function MostradorPage() {
             </button>
           </section>
         ) : (
-          <section className="grid items-start gap-4 2xl:grid-cols-[1fr_320px]">
-            <div className="card flex min-w-0 flex-col gap-4 p-5">
+          <section ref={ticketRef} className="grid min-w-0 scroll-mt-4 grid-cols-1 items-start gap-4 2xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="card flex min-w-0 flex-col gap-4 p-5 max-md:p-4">
               <TicketHeader
                 ticket={active}
                 online={online}
@@ -599,10 +607,23 @@ function TicketLines({
     return <p className="rounded-md border-2 border-dashed border-line px-4 py-10 text-center text-ink-subtle">El ticket está vacío. Escanea un producto para empezar.</p>
   }
   return (
-    <div className="overflow-x-auto">
-      {/* En el celular cada renglón se acomoda en dos líneas (ver LineRow). */}
-      <table className="w-full border-collapse text-left max-md:block">
-        <thead className="max-md:hidden">
+    <>
+      {/* Celular: cada producto es una tarjeta (nombre completo; precio, cantidad e importe abajo). */}
+      <ul className="divide-y divide-line border-y border-line md:hidden">
+        {ticket.lines.map((l) => (
+          <MobileLine
+            key={l.id}
+            ticket={ticket}
+            line={l}
+            product={productsById[l.productId]}
+            choice={l.choiceProductId ? productsById[l.choiceProductId] : undefined}
+            onChanged={onChanged}
+          />
+        ))}
+      </ul>
+    <div className="overflow-x-auto max-md:hidden">
+      <table className="w-full border-collapse text-left">
+        <thead>
           <tr className="border-b-2 border-ink text-caption tracking-wider whitespace-nowrap text-ink-muted uppercase">
             <th className="h-9 pr-3 font-semibold">Producto</th>
             <th className="h-9 px-3 text-right font-semibold">Precio</th>
@@ -613,7 +634,7 @@ function TicketLines({
             </th>
           </tr>
         </thead>
-        <tbody className="max-md:block">
+        <tbody>
           {ticket.lines.map((l) => (
             <LineRow
               key={l.id}
@@ -627,27 +648,23 @@ function TicketLines({
         </tbody>
       </table>
     </div>
+    </>
   )
 }
 
-function LineRow({
-  ticket,
-  line,
-  product,
-  choice,
-  onChanged,
-}: {
+type LineProps = {
   ticket: OpenTicket
   line: PosLine
   product: CachedProduct | undefined
   choice: CachedProduct | undefined
   onChanged: () => void
-}) {
+}
+
+/** − cantidad + del renglón (respeta el stock disponible). */
+function QuantityStepper({ ticket, line, product, choice, onChanged }: LineProps) {
   const [text, setText] = useState(String(line.quantity))
   useEffect(() => setText(String(line.quantity)), [line.quantity])
   const room = posStore.lineRoom(ticket.id, product, choice)
-  const { profile } = useAuth()
-  const isAdmin = profile?.role === 'admin'
   const name = product?.name ?? 'Producto'
 
   function commit(value: number) {
@@ -657,8 +674,161 @@ function LineRow({
   }
 
   return (
-    <tr className="border-b border-line max-md:grid max-md:grid-cols-[1fr_auto_auto] max-md:items-center max-md:gap-x-3 max-md:gap-y-2 max-md:px-3 max-md:py-3">
-      <td className="py-3 pr-3 max-md:col-span-2 max-md:p-0">
+    <div className="flex w-fit items-center gap-1">
+      <button
+        type="button"
+        aria-label={`Quitar una pieza de ${name}`}
+        disabled={line.quantity <= 1}
+        onClick={() => commit(line.quantity - 1)}
+        className="icon-btn"
+      >
+        −
+      </button>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => commit(Number(text))}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit(Number(text))
+            onChanged()
+          }
+        }}
+        inputMode="numeric"
+        aria-label={`Cantidad de ${name}`}
+        className="field h-control-sm w-14 px-1 text-center font-semibold tabular-nums max-md:h-8 max-md:w-11"
+      />
+      <button
+        type="button"
+        aria-label={`Agregar una pieza de ${name}`}
+        disabled={!product || room <= 0}
+        title={product && room <= 0 ? 'No hay más stock disponible' : undefined}
+        onClick={() => commit(line.quantity + 1)}
+        className="icon-btn"
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
+/** Renglón del ticket en el celular. */
+function MobileLine(props: LineProps) {
+  const { ticket, line, product, choice, onChanged } = props
+  const { profile } = useAuth()
+  const isAdmin = profile?.role === 'admin'
+  const name = product?.name ?? 'Producto'
+
+  return (
+    <li className="flex gap-3 py-3">
+      <ProductImage path={product?.image_url ?? null} alt="" className="size-11 shrink-0 rounded-xs" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-1">
+          <p className="min-w-0 flex-1 font-semibold break-words text-ink">
+            <LanguageTag language={product?.language} className="mr-1.5" />
+            {name}
+            {product?.is_preorder && <span className="ml-1.5 badge badge-warning align-middle">Preventa</span>}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              posStore.removeLine(ticket.id, line.id)
+              onChanged()
+            }}
+            aria-label={`Quitar ${name} del ticket`}
+            className="-mt-1 -mr-1 grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-ink-muted hover:bg-danger-bg hover:text-danger-fg"
+          >
+            <Icon name="x" />
+          </button>
+        </div>
+        {line.choiceProductId && (
+          <p className="text-caption text-ink-muted">
+            Bebida: <span className="font-medium text-ink">{choice?.name ?? 'ya no existe'}</span>
+          </p>
+        )}
+        {product?.is_preorder && (
+          <p className="text-caption text-ink-muted">
+            Anticipo mínimo {formatMoney(lineDeposit(line, product))} · {formatInt(Math.max(0, freeQuantity(product)))} libres en tienda
+          </p>
+        )}
+        {!product && <p className="text-caption text-danger-fg">Este producto ya no está en el inventario.</p>}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+          {isAdmin ? (
+            <MobilePrice ticket={ticket} line={line} product={product} onChanged={onChanged} />
+          ) : (
+            <span className="text-caption text-ink-muted tabular-nums">{formatMoney(line.unitPrice)} c/u</span>
+          )}
+          <div className="ml-auto flex items-center gap-3">
+            <QuantityStepper {...props} />
+            <span className="min-w-20 text-right font-display text-base font-extrabold tabular-nums">
+              {formatMoney(line.quantity * line.unitPrice)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </li>
+  )
+}
+
+/**
+ * Precio del renglón en el celular (admin): se muestra como texto con un
+ * lápiz; al tocarlo aparece el campo para cambiarlo (solo en este ticket).
+ */
+function MobilePrice({ ticket, line, product, onChanged }: Omit<LineProps, 'choice'>) {
+  const [editing, setEditing] = useState(false)
+  const changed = product != null && line.unitPrice !== product.price
+  if (editing) {
+    return (
+      <LinePrice
+        ticket={ticket}
+        line={line}
+        product={product}
+        autoFocus
+        onDone={() => setEditing(false)}
+        onChanged={onChanged}
+      />
+    )
+  }
+  return (
+    <span className="flex items-center gap-1">
+      <span className={`text-caption tabular-nums ${changed ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
+        {formatMoney(line.unitPrice)} c/u
+      </span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        aria-label={`Cambiar el precio de ${product?.name ?? 'producto'} en este ticket`}
+        title="Cambiar precio (solo este ticket)"
+        className="grid size-7 cursor-pointer place-items-center rounded-md text-ink-muted hover:bg-subtle hover:text-ink"
+      >
+        <Icon name="pencil" size={14} />
+      </button>
+      {changed && (
+        <button
+          type="button"
+          onClick={() => {
+            posStore.setPrice(ticket.id, line.id, product.price)
+            onChanged()
+          }}
+          className="cursor-pointer text-caption text-ink-muted underline hover:text-ink"
+        >
+          Normal: {formatMoney(product.price)}
+        </button>
+      )}
+    </span>
+  )
+}
+
+function LineRow(props: LineProps) {
+  const { ticket, line, product, choice, onChanged } = props
+  const { profile } = useAuth()
+  const isAdmin = profile?.role === 'admin'
+  const name = product?.name ?? 'Producto'
+
+  return (
+    <tr className="border-b border-line">
+      <td className="py-3 pr-3">
         <div className="flex items-center gap-3">
           <ProductImage path={product?.image_url ?? null} alt="" className="size-10 shrink-0 rounded-xs" />
           <div className="min-w-40">
@@ -678,60 +848,20 @@ function LineRow({
               </p>
             )}
             {product && <p className="font-mono text-caption text-ink-subtle">{product.barcode}</p>}
-            {isAdmin ? (
-              <div className="mt-1 md:hidden">
-                <LinePrice ticket={ticket} line={line} product={product} onChanged={onChanged} />
-              </div>
-            ) : (
-              <p className="text-caption text-ink-muted tabular-nums md:hidden">{formatMoney(line.unitPrice)} c/u</p>
-            )}
             {!product && <p className="text-caption text-danger-fg">Este producto ya no está en el inventario.</p>}
           </div>
         </div>
       </td>
-      <td className="px-3 py-3 text-right text-ink-muted tabular-nums max-md:hidden">
+      <td className="px-3 py-3 text-right text-ink-muted tabular-nums">
         {isAdmin ? <LinePrice ticket={ticket} line={line} product={product} onChanged={onChanged} /> : formatMoney(line.unitPrice)}
       </td>
-      <td className="px-3 py-3 max-md:row-start-2 max-md:p-0">
-        <div className="mx-auto flex w-fit max-md:mx-0 items-center gap-1">
-          <button
-            type="button"
-            aria-label={`Quitar una pieza de ${name}`}
-            disabled={line.quantity <= 1}
-            onClick={() => commit(line.quantity - 1)}
-            className="icon-btn"
-          >
-            −
-          </button>
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onBlur={() => commit(Number(text))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commit(Number(text))
-                onChanged()
-              }
-            }}
-            inputMode="numeric"
-            aria-label={`Cantidad de ${name}`}
-            className="field h-control-sm w-14 px-1 text-center font-semibold tabular-nums"
-          />
-          <button
-            type="button"
-            aria-label={`Agregar una pieza de ${name}`}
-            disabled={!product || room <= 0}
-            title={product && room <= 0 ? 'No hay más stock disponible' : undefined}
-            onClick={() => commit(line.quantity + 1)}
-            className="icon-btn"
-          >
-            +
-          </button>
+      <td className="px-3 py-3">
+        <div className="mx-auto w-fit">
+          <QuantityStepper {...props} />
         </div>
       </td>
-      <td className="px-3 py-3 text-right font-display text-lg font-extrabold tabular-nums max-md:col-span-2 max-md:row-start-2 max-md:p-0">{formatMoney(line.quantity * line.unitPrice)}</td>
-      <td className="py-3 pl-3 max-md:col-start-3 max-md:row-start-1 max-md:justify-self-end max-md:p-0">
+      <td className="px-3 py-3 text-right font-display text-lg font-extrabold tabular-nums">{formatMoney(line.quantity * line.unitPrice)}</td>
+      <td className="py-3 pl-3">
         <button
           type="button"
           onClick={() => {
@@ -757,11 +887,16 @@ function LinePrice({
   line,
   product,
   onChanged,
+  autoFocus,
+  onDone,
 }: {
   ticket: OpenTicket
   line: PosLine
   product: CachedProduct | undefined
   onChanged: () => void
+  /** Celular: el campo aparece al tocar el lápiz y se cierra al terminar. */
+  autoFocus?: boolean
+  onDone?: () => void
 }) {
   const [text, setText] = useState(String(line.unitPrice))
   useEffect(() => setText(String(line.unitPrice)), [line.unitPrice])
@@ -774,6 +909,11 @@ function LinePrice({
     setText(String(price))
   }
 
+  function finish() {
+    commit()
+    onDone?.()
+  }
+
   return (
     <div className="flex flex-col items-end gap-0.5 max-md:items-start">
       <div className="flex items-center gap-1">
@@ -781,21 +921,27 @@ function LinePrice({
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onBlur={commit}
+          onBlur={finish}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault()
-              commit()
+              finish()
               onChanged()
             }
+            if (e.key === 'Escape' && onDone) {
+              setText(String(line.unitPrice))
+              onDone()
+            }
           }}
+          autoFocus={autoFocus}
+          onFocus={(e) => autoFocus && e.target.select()}
           inputMode="decimal"
           aria-label={`Precio de ${product?.name ?? 'producto'} en este ticket`}
           title="Precio solo para este ticket"
           className={`field h-control-sm w-24 px-2 text-right tabular-nums ${changed ? 'font-semibold text-ink' : ''}`}
         />
       </div>
-      {changed && (
+      {changed && !onDone && (
         <button
           type="button"
           onClick={() => {

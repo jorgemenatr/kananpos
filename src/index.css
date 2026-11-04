@@ -458,6 +458,23 @@
   .btn-icon { width: var(--h); @apply px-0; }
   .btn-icon:not(.btn-sm):is(.btn-primary, .btn-gold, .btn-secondary) { width: calc(var(--h) - var(--ext)); }
 
+  /*
+   * Mostrador en el celular: botones, opciones de pago y +/− más chicos para
+   * que quepa más del ticket en la pantalla. Solo dentro de .pos-compact.
+   */
+  @media (max-width: 47.99rem) {
+    .pos-compact .btn { --h: 36px; @apply gap-1.5 px-3; font-size: 13px; line-height: 18px; }
+    .pos-compact .btn-lg { --h: 44px; @apply gap-2 px-4; font-size: 15px; line-height: 20px; }
+    .pos-compact .btn:not(.btn-sm):is(.btn-primary, .btn-gold, .btn-secondary) {
+      --ext: 3px;
+      box-shadow:
+        inset 0 0 0 var(--contour, 0px) var(--side),
+        -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side);
+    }
+    .pos-compact .choice { @apply h-control-sm px-2.5; font-size: 12px; }
+    .pos-compact .icon-btn { @apply size-8; }
+  }
+
   /* Input de texto (TextField): 44px, borde de 2px; al enfocar, borde jade y halo menta. */
   .field {
     @apply h-control-md w-full rounded-md border-2 border-control bg-surface px-3 text-body text-ink;

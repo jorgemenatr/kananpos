@@ -109,14 +109,23 @@ export function Layout() {
         >
           <Icon name="menu" size={22} />
         </button>
-        <KananMark size={26} className="shrink-0" />
         <span className="min-w-0 flex-1 truncate font-display text-heading font-extrabold uppercase">{sectionLabel(pathname) || appTitle(settings)}</span>
+        {/* La K de Kanan a la derecha. En línea no lleva marca; sin conexión o con
+            pendientes, un punto rojo / ámbar en su esquina. */}
         <span
-          className={`mr-3 size-2.5 shrink-0 ${!online ? 'bg-danger-solid' : queue.length > 0 ? 'bg-warning-solid' : 'bg-success-solid'}`}
+          className="relative mr-2 shrink-0"
           title={!online ? 'Sin conexión' : queue.length > 0 ? 'Pendiente por sincronizar' : 'En línea'}
           role="img"
-          aria-label={!online ? 'Sin conexión' : queue.length > 0 ? 'Pendiente por sincronizar' : 'En línea'}
-        />
+          aria-label={`Kanan · ${!online ? 'Sin conexión' : queue.length > 0 ? 'Pendiente por sincronizar' : 'En línea'}`}
+        >
+          <KananMark size={26} />
+          {(!online || queue.length > 0) && (
+            <span
+              className={`absolute -top-1 -right-1 size-2.5 ring-2 ring-nav-bg ${!online ? 'bg-danger-solid' : 'bg-warning-solid'}`}
+              aria-hidden
+            />
+          )}
+        </span>
       </header>
 
       {menuOpen && (
@@ -194,7 +203,8 @@ export function Layout() {
           </div>
         </div>
       </nav>
-      <main className="min-h-0 min-w-0 flex-1 overflow-auto">
+      {/* En el celular nada puede ensanchar la pantalla (sin scroll horizontal). */}
+      <main className="min-h-0 min-w-0 flex-1 overflow-auto max-md:overflow-x-hidden">
         <Outlet />
       </main>
       {simulator && <ScannerSimulator />}

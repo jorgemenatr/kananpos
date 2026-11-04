@@ -132,6 +132,17 @@ export function ProductPicker({
         >
           {results.map((p, i) => {
             const avail = available(p)
+            const stockText =
+              avail > 0
+                ? availableText
+                  ? availableText(p, avail)
+                  : avail === Infinity
+                    ? 'Sin inventario'
+                    : `Disponibles: ${formatInt(avail)}`
+                : unavailableText
+                  ? unavailableText(p)
+                  : `${p.quantity > 0 ? 'Apartado en tickets' : 'Sin stock'}${p.warehouse_quantity > 0 ? ` · ${formatInt(p.warehouse_quantity)} en bodega` : ''}`
+            const stockClass = avail > 0 ? 'text-ink-muted' : 'text-danger-fg'
             return (
               <li key={p.barcode} role="option" aria-selected={i === active}>
                 <button
@@ -142,25 +153,20 @@ export function ProductPicker({
                 >
                   <ProductImage path={p.image_url} alt="" className="size-10 shrink-0 rounded-xs" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-label text-ink">
+                    {/* En el celular el nombre va completo y el precio y las existencias debajo (sin el código). */}
+                    <p className="text-label break-words text-ink md:truncate">
                       <LanguageTag language={p.language} className="mr-1.5" />
                       {p.name}
                     </p>
-                    <p className="truncate font-mono text-caption text-ink-subtle">{p.barcode}</p>
+                    <p className="truncate font-mono text-caption text-ink-subtle max-md:hidden">{p.barcode}</p>
+                    <p className="text-caption md:hidden">
+                      {showPrice && <span className="font-semibold text-ink tabular-nums">{formatMoney(p.price)} · </span>}
+                      <span className={stockClass}>{stockText}</span>
+                    </p>
                   </div>
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 text-right max-md:hidden">
                     {showPrice && <p className="text-label tabular-nums">{formatMoney(p.price)}</p>}
-                    {avail > 0 ? (
-                      <p className="text-caption text-ink-muted">
-                        {availableText ? availableText(p, avail) : avail === Infinity ? 'Sin inventario' : `Disponibles: ${formatInt(avail)}`}
-                      </p>
-                    ) : (
-                      <p className="text-caption text-danger-fg">
-                        {unavailableText
-                          ? unavailableText(p)
-                          : `${p.quantity > 0 ? 'Apartado en tickets' : 'Sin stock'}${p.warehouse_quantity > 0 ? ` · ${formatInt(p.warehouse_quantity)} en bodega` : ''}`}
-                      </p>
-                    )}
+                    <p className={`text-caption ${stockClass}`}>{stockText}</p>
                   </div>
                 </button>
               </li>
