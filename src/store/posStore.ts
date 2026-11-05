@@ -29,7 +29,7 @@ export interface PosLine {
   productId: string
   /** Opción elegida del combo (refresco): va a $0 y descuenta su inventario. */
   choiceProductId: string | null
-  /** Precio de venta en ESTE ticket (un admin lo puede cambiar sin tocar el del producto). */
+  /** Precio de venta en ESTE ticket (se puede cambiar sin tocar el del producto). */
   unitPrice: number
   quantity: number
   createdAt: string
