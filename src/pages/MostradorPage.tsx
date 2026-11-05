@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../auth/useAuth'
 import { CancelTicketModal } from '../components/CancelTicketModal'
 import { CustomerFormModal } from '../components/CustomerFormModal'
 import { Icon } from '../components/Icon'
@@ -716,8 +715,6 @@ function QuantityStepper({ ticket, line, product, choice, onChanged }: LineProps
 /** Renglón del ticket en el celular. */
 function MobileLine(props: LineProps) {
   const { ticket, line, product, choice, onChanged } = props
-  const { profile } = useAuth()
-  const isAdmin = profile?.role === 'admin'
   const name = product?.name ?? 'Producto'
 
   return (
@@ -754,11 +751,7 @@ function MobileLine(props: LineProps) {
         )}
         {!product && <p className="text-caption text-danger-fg">Este producto ya no está en el inventario.</p>}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-          {isAdmin ? (
-            <MobilePrice ticket={ticket} line={line} product={product} onChanged={onChanged} />
-          ) : (
-            <span className="text-caption text-ink-muted tabular-nums">{formatMoney(line.unitPrice)} c/u</span>
-          )}
+          <MobilePrice ticket={ticket} line={line} product={product} onChanged={onChanged} />
           <div className="ml-auto flex items-center gap-3">
             <QuantityStepper {...props} />
             <span className="min-w-20 text-right font-display text-base font-extrabold tabular-nums">
@@ -772,7 +765,7 @@ function MobileLine(props: LineProps) {
 }
 
 /**
- * Precio del renglón en el celular (admin): se muestra como texto con un
+ * Precio del renglón en el celular: se muestra como texto con un
  * lápiz; al tocarlo aparece el campo para cambiarlo (solo en este ticket).
  */
 function MobilePrice({ ticket, line, product, onChanged }: Omit<LineProps, 'choice'>) {
@@ -822,8 +815,6 @@ function MobilePrice({ ticket, line, product, onChanged }: Omit<LineProps, 'choi
 
 function LineRow(props: LineProps) {
   const { ticket, line, product, choice, onChanged } = props
-  const { profile } = useAuth()
-  const isAdmin = profile?.role === 'admin'
   const name = product?.name ?? 'Producto'
 
   return (
@@ -853,7 +844,7 @@ function LineRow(props: LineProps) {
         </div>
       </td>
       <td className="px-3 py-3 text-right text-ink-muted tabular-nums">
-        {isAdmin ? <LinePrice ticket={ticket} line={line} product={product} onChanged={onChanged} /> : formatMoney(line.unitPrice)}
+        <LinePrice ticket={ticket} line={line} product={product} onChanged={onChanged} />
       </td>
       <td className="px-3 py-3">
         <div className="mx-auto w-fit">
@@ -879,7 +870,7 @@ function LineRow(props: LineProps) {
 }
 
 /**
- * Precio editable del renglón (solo admin). Cambia el precio en este ticket
+ * Precio editable del renglón (admin y mostrador). Cambia el precio en este ticket
  * nada más: el del producto en el inventario y en otros tickets sigue igual.
  */
 function LinePrice({

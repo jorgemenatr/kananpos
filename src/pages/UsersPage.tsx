@@ -10,7 +10,7 @@ const ROLES: UserRole[] = ['admin', 'mostrador']
 
 const ROLE_HELP: Record<UserRole, string> = {
   admin: 'Todo, incluido agregar y editar inventario y administrar usuarios.',
-  mostrador: 'Vender, clientes, créditos y puntos de liga. No puede agregar ni editar inventario.',
+  mostrador: 'Vender (también con otro precio en el ticket), dar de alta clientes, créditos y puntos de liga. No puede agregar ni editar inventario.',
 }
 
 const byName = (a: Profile, b: Profile) => (a.full_name || a.email).localeCompare(b.full_name || b.email, 'es-MX')
