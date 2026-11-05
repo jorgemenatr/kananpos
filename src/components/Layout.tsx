@@ -9,6 +9,7 @@ import { ConnectionBadge } from './ConnectionBadge'
 import { Icon, type IconName } from './Icon'
 import { KananMark } from './KananMark'
 import { ScannerSimulator, useSimulatorEnabled } from './ScannerSimulator'
+import { UpdateBanner } from './UpdateBanner'
 
 interface NavItem {
   to: string
@@ -204,9 +205,12 @@ export function Layout() {
         </div>
       </nav>
       {/* En el celular nada puede ensanchar la pantalla (sin scroll horizontal). */}
-      <main className="min-h-0 min-w-0 flex-1 overflow-auto max-md:overflow-x-hidden">
-        <Outlet />
-      </main>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <UpdateBanner />
+        <main className="min-h-0 min-w-0 flex-1 overflow-auto max-md:overflow-x-hidden">
+          <Outlet />
+        </main>
+      </div>
       {simulator && <ScannerSimulator />}
     </div>
   )
