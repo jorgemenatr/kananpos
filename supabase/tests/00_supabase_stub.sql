@@ -13,6 +13,9 @@ do $$ begin
     create role authenticated nologin;
     create role service_role nologin bypassrls;
   end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticator') then
+    create role authenticator noinherit;
+  end if;
 end $$;
 
 create extension if not exists pgcrypto;
@@ -21,12 +24,23 @@ create schema auth;
 create table auth.users (
   id                 uuid primary key default gen_random_uuid(),
   email              text,
-  raw_user_meta_data jsonb default '{}'::jsonb
+  raw_user_meta_data jsonb default '{}'::jsonb,
+  banned_until       timestamptz,
+  last_sign_in_at    timestamptz
+);
+create table auth.sessions (
+  id      uuid primary key default gen_random_uuid(),
+  user_id uuid not null
+);
+create table auth.refresh_tokens (
+  id         bigserial primary key,
+  user_id    varchar(255),
+  session_id uuid references auth.sessions (id) on delete cascade
 );
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub', '')::uuid
 $$;
-grant usage on schema auth to anon, authenticated;
+grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated;
 
 create schema storage;

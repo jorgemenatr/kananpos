@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
         {
           error:
             `Se desactivó el usuario, pero no se pudieron cerrar sus sesiones: ${revokeError.message}. ` +
-            '¿Falta aplicar la migración 20261106000100_desactivar_usuarios.sql?',
+            '¿Falta aplicar la migración 20261106000200_desactivar_usuarios.sql?',
         },
         500,
       )
