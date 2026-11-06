@@ -5,6 +5,32 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Sitio comercial (public/sitio/index.html) en el dominio principal. La raíz
+# necesita force porque index.html existe; el resto de rutas sin force, para que
+# sigan saliendo los archivos reales (favicon, íconos). Los subdominios de los
+# clientes no entran aquí y siguen con la app.
+[[redirects]]
+  from = "https://kananpos.com/"
+  to = "/sitio/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://www.kananpos.com/"
+  to = "/sitio/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://kananpos.com/*"
+  to = "/sitio/index.html"
+  status = 200
+
+[[redirects]]
+  from = "https://www.kananpos.com/*"
+  to = "/sitio/index.html"
+  status = 200
+
 # SPA: todas las rutas sirven index.html (React Router se encarga)
 [[redirects]]
   from = "/*"
