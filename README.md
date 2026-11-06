@@ -62,6 +62,7 @@ Las migraciones están en `supabase/migrations/` y deben aplicarse **en orden**:
 | `20261031000200_reservas_preventa.sql` | Vista `product_reservations` (piezas comprometidas en preventas). Corrige "permission denied for table products" al editar productos y recargar el catálogo. Aplicar **antes** de publicar la app nueva |
 | `20261031000300_combos_grupo_bebidas.sql` | Combos con grupo de bebidas: `products.is_combo` y `app_settings.combo_drinks_category` (la categoría cuyos productos son las bebidas a elegir). `checkout_ticket` valida la bebida contra ese grupo; `product_combo_options` deja de usarse. Compatible con la app anterior |
 | `20261102000100_idioma_producto.sql` | Idioma del producto (`products.language`: inglés, español, japonés, chino o sin idioma) y `create_product` con `p_language`. Etiqueta los productos actuales ("ESPAÑOL"/"Japones" en el nombre → ese idioma, y quita la palabra del nombre; el resto de Pokémon → inglés). Aplicar **antes** de publicar la app nueva |
+| `20261106000200_desactivar_usuarios.sql` | **Desactivar usuarios:** `user_access_status()` (estado de acceso, solo admin), `revoke_user_sessions()` (solo `service_role`), `check_request()` como `pgrst.db_pre_request` (la API rechaza al instante a un usuario desactivado) y `keep_one_admin` exige un admin **activo**. Se puede aplicar antes o después de publicar la app |
 
 **Opción A: SQL Editor (lo más sencillo).** En el dashboard ve a **SQL Editor → New query**,
 pega el contenido de cada archivo en orden y presiona **Run**.
@@ -90,24 +91,35 @@ npx supabase db push
    existían si todavía no había ningún admin.)
 
 Las demás personas se dan de alta desde la app en **Usuarios** (ver
-[Usuarios y roles](#usuarios-y-roles)). Para quitar el acceso a alguien, bórralo o
-bloquéalo en **Authentication → Users**.
+[Usuarios y roles](#usuarios-y-roles)). Para quitar el acceso a alguien, desactívalo ahí
+mismo (**Usuarios → lápiz → Desactivar usuario**).
 
-### 4b. Publicar la Edge Function `crear-usuario`
+### 4b. Publicar las Edge Functions `crear-usuario` y `desactivar-usuario`
 
-La pantalla **Usuarios** crea cuentas con una Edge Function, porque crear usuarios
+La pantalla **Usuarios** crea y desactiva cuentas con Edge Functions, porque eso
 necesita la `service_role` key y esa nunca puede ir en el navegador.
 
-**Opción A: dashboard.** **Edge Functions → Deploy a new function → Via Editor**, ponle de
-nombre `crear-usuario`, pega el contenido de `supabase/functions/crear-usuario/index.ts`
-y presiona **Deploy**. Deja activado **Verify JWT** (la función además revisa que quien la
-llama sea admin).
+| Función | Hace |
+| --- | --- |
+| `crear-usuario` | Crea la cuenta (correo, nombre, rol y contraseña temporal) |
+| `desactivar-usuario` | Bloquea o devuelve el acceso de una cuenta y cierra sus sesiones |
+
+**Opción A: dashboard.** Por cada función: **Edge Functions → Deploy a new function → Via
+Editor**, ponle el nombre de la función, pega el contenido de
+`supabase/functions/<nombre>/index.ts` y presiona **Deploy**. Deja activado **Verify JWT**
+(la función además revisa que quien la llama sea admin).
 
 **Opción B: Supabase CLI.**
 
 ```bash
 npx supabase functions deploy crear-usuario
 ```
+
+```bash
+npx supabase functions deploy desactivar-usuario
+```
+
+Con varios clientes: `npm run clientes -- funciones` despliega las dos en todos.
 
 No hay que configurar secretos: Supabase le da a la función `SUPABASE_URL`,
 `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`.
@@ -223,7 +235,7 @@ Todo se administra con `npm run clientes` (`scripts/clientes.mjs`), que usa la
    Esto cierra el registro público, apunta la Site URL de Auth a su subdominio, corre
    todas las migraciones, guarda el nombre y el prefijo, crea las categorías (los juegos como subcategorías de **TCG**, las marcas de
    accesorios en **Accesorios** y las de `--categorias` como principales), despliega la
-   función `crear-usuario`, crea al primer admin (imprime su contraseña temporal), carga el
+   funciones (`crear-usuario`, `desactivar-usuario`), crea al primer admin (imprime su contraseña temporal; la app le pide cambiarla al entrar), carga el
    catálogo **solo de sus juegos** y lo agrega a `src/tenants.json`. Se puede volver a
    correr si algo falla a medias. Las categorías se cambian después en **Configuración**.
 3. Commit y push a `main`. Al publicar Netlify, el cliente ya entra en
@@ -272,7 +284,28 @@ cualquier rol.
 
 En **Usuarios** (solo admin) se crea una cuenta con nombre, correo, rol y una contraseña
 temporal que le compartes a la persona. Ahí mismo se cambia el nombre o el rol; siempre
-debe quedar al menos un administrador.
+debe quedar al menos un administrador activo.
+
+**Contraseñas.** Mínimo 10 caracteres, con letras y números (la temporal también). Al
+entrar por primera vez con la contraseña temporal, la app pide cambiarla (marca
+`must_change_password` en el `user_metadata`, que pone `crear-usuario`). Cualquier
+usuario cambia la suya cuando quiera con el botón de la llave junto a su nombre, en el
+menú: pide la contraseña actual y la nueva dos veces. Si alguien olvida su contraseña, un
+admin puede mandarle un correo de recuperación desde **Authentication → Users** en Supabase.
+
+**Desactivar a alguien que ya no trabaja aquí.** **Usuarios → lápiz → Desactivar usuario**
+(solo admin). La lista muestra quién está **Activo** o **Desactivado**. Al desactivar:
+
+- La Edge Function `desactivar-usuario` lo bloquea en Auth (`ban_duration: '876000h'`) y
+  borra sus sesiones (`revoke_user_sessions`): no puede volver a entrar ni renovar su sesión.
+- La base rechaza de inmediato cualquier petición suya, aunque su token todavía no venza
+  (`check_request`, configurada como `pgrst.db_pre_request`). La app lo saca a la pantalla
+  de inicio de sesión. (Las fotos de Storage y el tiempo real no pasan por ahí: su token
+  deja de servir para eso cuando vence, en máximo 1 hora.)
+- Sus ventas, movimientos y demás registros se conservan.
+- Nadie se puede desactivar a sí mismo, ni desactivar al último administrador activo.
+
+**Reactivar usuario** (mismo lugar) le devuelve el acceso con su misma contraseña.
 
 ## Categorías de producto
 

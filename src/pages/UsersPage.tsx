@@ -2,9 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { Icon } from '../components/Icon'
 import { formatDateTime } from '../lib/format'
+import { PASSWORD_RULE, passwordProblem } from '../lib/password'
 import { isNetworkError } from '../lib/supabase'
 import { ROLE_LABELS, type Profile, type UserRole } from '../lib/types'
-import { createUser, listUsers, updateUser } from '../lib/users'
+import { createUser, listUsers, setUserDisabled, updateUser } from '../lib/users'
 
 const ROLES: UserRole[] = ['admin', 'mostrador']
 
@@ -14,6 +15,16 @@ const ROLE_HELP: Record<UserRole, string> = {
 }
 
 const byName = (a: Profile, b: Profile) => (a.full_name || a.email).localeCompare(b.full_name || b.email, 'es-MX')
+
+/** Activo / Desactivado (sin dato si falta la migración de usuarios desactivados). */
+function AccessBadge({ user }: { user: Profile }) {
+  if (user.disabled === undefined) return null
+  return user.disabled ? (
+    <span className="badge badge-danger">Desactivado</span>
+  ) : (
+    <span className="badge badge-success">Activo</span>
+  )
+}
 
 /** Usuarios de la app (solo administradores): alta con nombre, correo y rol. */
 export function UsersPage() {
@@ -83,6 +94,7 @@ export function UsersPage() {
                   <p className="break-all text-ink-muted">{u.email}</p>
                   <div className="flex flex-wrap items-center gap-2 text-caption text-ink-muted">
                     <span className={`badge ${u.role === 'admin' ? 'badge-info' : 'badge-neutral'}`}>{ROLE_LABELS[u.role] ?? u.role}</span>
+                    <AccessBadge user={u} />
                     {u.created_at && <span>Alta {formatDateTime(u.created_at)}</span>}
                   </div>
                 </div>
@@ -107,6 +119,7 @@ export function UsersPage() {
                 <th className="h-control-md px-4 font-medium">Nombre</th>
                 <th className="h-control-md px-4 font-medium">Correo</th>
                 <th className="h-control-md px-4 font-medium">Rol</th>
+                <th className="h-control-md px-4 font-medium">Estado</th>
                 <th className="h-control-md px-4 font-medium">Alta</th>
                 <th className="h-control-md w-12 px-2 font-medium">
                   <span className="sr-only">Editar</span>
@@ -115,7 +128,7 @@ export function UsersPage() {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} className="border-t border-line">
+                <tr key={u.id} className={`border-t border-line ${u.disabled ? 'text-ink-subtle' : ''}`}>
                   <td className="h-row px-4 font-medium">
                     {u.full_name || '—'}
                     {u.id === user?.id && <span className="ml-2 text-caption font-normal text-ink-subtle">(tú)</span>}
@@ -123,6 +136,9 @@ export function UsersPage() {
                   <td className="h-row px-4 text-ink-muted">{u.email}</td>
                   <td className="h-row px-4">
                     <span className={`badge ${u.role === 'admin' ? 'badge-info' : 'badge-neutral'}`}>{ROLE_LABELS[u.role] ?? u.role}</span>
+                  </td>
+                  <td className="h-row px-4">
+                    <AccessBadge user={u} />
                   </td>
                   <td className="h-row px-4 whitespace-nowrap text-ink-muted">{u.created_at ? formatDateTime(u.created_at) : '—'}</td>
                   <td className="h-row px-2">
@@ -149,13 +165,27 @@ export function UsersPage() {
       {editing && (
         <UserFormModal
           user={editing === 'new' ? null : editing}
+          isSelf={editing !== 'new' && editing.id === user?.id}
           onCancel={() => setEditing(null)}
+          onAccessChanged={(p) => {
+            setEditing(null)
+            setUsers((prev) => (prev ?? []).map((u) => (u.id === p.id ? p : u)))
+            setSaved(
+              p.disabled
+                ? `Se desactivó a ${p.full_name || p.email}: ya no puede entrar y se cerraron sus sesiones.`
+                : `Se reactivó a ${p.full_name || p.email}: ya puede volver a iniciar sesión.`,
+            )
+          }}
           onSaved={(p, isNew) => {
             setEditing(null)
-            setUsers((prev) => [...(prev ?? []).filter((u) => u.id !== p.id), p].sort(byName))
+            setUsers((prev) => {
+              const old = prev?.find((u) => u.id === p.id)
+              const merged = old ? { ...old, ...p } : p
+              return [...(prev ?? []).filter((u) => u.id !== p.id), merged].sort(byName)
+            })
             setSaved(
               isNew
-                ? `Se creó el usuario ${p.email}. Compártele la contraseña temporal para su primer inicio de sesión.`
+                ? `Se creó el usuario ${p.email}. Compártele la contraseña temporal: al entrar por primera vez se le pedirá cambiarla.`
                 : `Se guardaron los cambios de ${p.full_name || p.email}.`,
             )
           }}
@@ -167,13 +197,18 @@ export function UsersPage() {
 
 function UserFormModal({
   user,
+  isSelf,
   onCancel,
   onSaved,
+  onAccessChanged,
 }: {
   /** null = usuario nuevo. */
   user: Profile | null
+  /** El usuario es quien tiene la sesión (no se puede desactivar). */
+  isSelf: boolean
   onCancel: () => void
   onSaved: (profile: Profile, isNew: boolean) => void
+  onAccessChanged: (profile: Profile) => void
 }) {
   const [name, setName] = useState(user?.full_name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
@@ -182,6 +217,27 @@ function UserFormModal({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  async function toggleAccess() {
+    if (!user || saving) return
+    const disable = !user.disabled
+    const who = user.full_name || user.email
+    const ok = window.confirm(
+      disable
+        ? `¿Desactivar a ${who}?\n\nNo podrá iniciar sesión y se cerrarán sus sesiones abiertas en todos los dispositivos. Sus ventas y movimientos se conservan. Puedes reactivarlo después.`
+        : `¿Reactivar a ${who}?\n\nPodrá volver a iniciar sesión con su contraseña.`,
+    )
+    if (!ok) return
+    setError(null)
+    setSaving(true)
+    try {
+      await setUserDisabled(user.id, disable)
+      onAccessChanged({ ...user, disabled: disable })
+    } catch (err) {
+      setError(isNetworkError(err) ? 'Sin conexión: intenta cuando vuelva el internet.' : (err as Error).message)
+      setSaving(false)
+    }
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     if (saving) return
@@ -189,8 +245,8 @@ function UserFormModal({
     if (!name.trim()) return setError('El nombre es obligatorio.')
     if (!user) {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError('El correo no parece válido.')
-      if (password.length < 10 || !/[a-z]/i.test(password) || !/\d/.test(password))
-        return setError('La contraseña temporal debe tener al menos 10 caracteres, con letras y números.')
+      const problem = passwordProblem(password)
+      if (problem) return setError(problem)
     }
     setSaving(true)
     try {
@@ -271,7 +327,35 @@ function UserFormModal({
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
               />
-              <p className="mt-1 text-caption text-ink-subtle">Mínimo 10 caracteres, con letras y números. Compártela con la persona para que inicie sesión.</p>
+              <p className="mt-1 text-caption text-ink-subtle">
+                {PASSWORD_RULE} Compártela con la persona; al entrar por primera vez se le pedirá cambiarla.
+              </p>
+            </div>
+          )}
+
+          {user && user.disabled !== undefined && (
+            <div className="space-y-2 border-t border-line pt-4">
+              <p className="field-label">Acceso</p>
+              {isSelf ? (
+                <p className="text-caption text-ink-muted">No puedes desactivar tu propia cuenta.</p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="min-w-0 flex-1 text-caption text-ink-muted">
+                    {user.disabled
+                      ? 'Este usuario está desactivado: no puede iniciar sesión.'
+                      : 'Desactívalo cuando la persona ya no trabaje aquí: no podrá entrar y se cierran sus sesiones.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void toggleAccess()}
+                    disabled={saving}
+                    className={`btn ${user.disabled ? 'btn-secondary' : 'btn-danger'}`}
+                  >
+                    <Icon name={user.disabled ? 'unlock' : 'lock'} />
+                    {user.disabled ? 'Reactivar usuario' : 'Desactivar usuario'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

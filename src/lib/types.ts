@@ -28,6 +28,9 @@ export interface Profile {
   full_name: string | null
   role: UserRole
   created_at?: string
+  /** Solo en la pantalla Usuarios (admin): acceso desactivado. */
+  disabled?: boolean
+  last_sign_in_at?: string | null
 }
 
 export interface Product {

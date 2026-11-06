@@ -60,6 +60,13 @@ $P -d ${DB}_perm -f supabase/tests/00_supabase_stub.sql
 for f in supabase/migrations/*.sql; do $P -d ${DB}_perm -f "$f"; done
 $P -d ${DB}_perm -f supabase/tests/permisos_test.sql
 
+# Usuarios desactivados: estado de acceso, cerrar sesiones, check_request y
+# siempre un admin activo.
+$P -d postgres -c "drop database if exists ${DB}_users" -c "create database ${DB}_users"
+$P -d ${DB}_users -f supabase/tests/00_supabase_stub.sql
+for f in supabase/migrations/*.sql; do $P -d ${DB}_users -f "$f"; done
+$P -d ${DB}_users -f supabase/tests/usuarios_desactivados_test.sql
+
 # ---------- 10. Concurrencia ----------
 # Dos ventas al mismo tiempo de un producto con 5 en tienda (3 + 3 piezas):
 # solo una puede pasar. Y un traspaso tienda → bodega al mismo tiempo que una

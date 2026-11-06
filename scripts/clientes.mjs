@@ -8,14 +8,14 @@
  *   estado                       Migraciones aplicadas y pendientes de cada cliente.
  *   migrar [--prueba]            Aplica las migraciones pendientes (en orden, cada una
  *                                en su propia transacción). --prueba solo las lista.
- *   funciones                    Despliega las Edge Functions (crear-usuario).
+ *   funciones                    Despliega las Edge Functions (crear-usuario, desactivar-usuario).
  *   alta --ref <id> --subdominio tienda --negocio "Nombre" --prefijo ABC
  *        --admin-correo a@b.mx --admin-nombre "Nombre"
  *        [--juegos pokemon,magic,dragon-shield] [--categorias "Cafetería,Juegos de mesa"]
  *                                Prepara un proyecto NUEVO: cierra el registro público,
  *                                apunta la Site URL de Auth a su subdominio,
  *                                corre las migraciones, guarda el nombre y el prefijo,
- *                                crea las categorías, despliega la función, crea el primer
+ *                                crea las categorías, despliega las funciones, crea el primer
  *                                admin, carga el catálogo de sus juegos y lo registra en
  *                                src/tenants.json (tienda.<dominio_base>). --juegos: claves
  *                                de src/lib/catalogSources.json (los juegos van como
@@ -54,7 +54,7 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MIGRATIONS_DIR = join(ROOT, 'supabase', 'migrations')
-const FUNCTIONS = ['crear-usuario']
+const FUNCTIONS = ['crear-usuario', 'desactivar-usuario']
 const FUENTES = JSON.parse(readFileSync(join(ROOT, 'src', 'lib', 'catalogSources.json'), 'utf8'))
 const API = 'https://api.supabase.com/v1'
 
@@ -415,7 +415,13 @@ async function cmdAlta(opts) {
   const res = await fetch(`${url}/auth/v1/admin/users`, {
     method: 'POST',
     headers: { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: correo, password, email_confirm: true, user_metadata: { full_name: nombre } }),
+    body: JSON.stringify({
+      email: correo,
+      password,
+      email_confirm: true,
+      // La app le pide cambiar la contraseña temporal al entrar.
+      user_metadata: { full_name: nombre, must_change_password: true },
+    }),
   })
   let created = true
   if (!res.ok) {
@@ -451,7 +457,7 @@ Listo. Se registró en src/tenants.json como ${subdominio}.${tenants.dominio_bas
 Falta publicarlo: commit y push a main (Netlify construye una sola vez para todos).
 Y en Netlify → Domain management → Add domain alias: ${subdominio}.${tenants.dominio_base}
 (el DNS y el certificado los pone Netlify solo).
-${created ? `\nAcceso del admin (pídele que la cambie):\n  ${correo}\n  ${password}\n` : ''}`)
+${created ? `\nAcceso del admin (la app le pide cambiarla al entrar):\n  ${correo}\n  ${password}\n` : ''}`)
 }
 
 async function cmdCatalogo(opts, passthrough) {
