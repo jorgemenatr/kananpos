@@ -1,0 +1,1018 @@
+<!doctype html>
+<!--
+  Sitio comercial de Kanan POS (kananpos.com). Archivo estático, sin build:
+  netlify.toml lo sirve solo en el dominio principal (kananpos.com y www);
+  los subdominios de clientes siguen abriendo la app.
+  El número de WhatsApp de ventas está en la constante WHATSAPP del script.
+-->
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Kanan POS: punto de venta e inventario para tiendas de TCG y hobby. Preventas, créditos, puntos de liga y más de 10,500 productos ya cargados. Agenda tu demo.">
+<meta name="theme-color" content="#0F4C4A">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kananpos.com/">
+<meta property="og:title" content="Kanan POS: el punto de venta que sí habla TCG">
+<meta property="og:description" content="Punto de venta e inventario para tiendas de cartas, juegos y accesorios. Desde $500 MXN al mes.">
+<meta property="og:image" content="https://kananpos.com/icon-512.png">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="canonical" href="https://kananpos.com/">
+<title>Kanan POS · Punto de venta para tiendas de TCG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Instrument+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+img { max-width: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* Layout: sitio de marketing sobre el design system Kanan. Bandas a todo lo ancho,
+   contenido a 1160px; la firma es el bloque con extrusión dura abajo-izquierda. */
+:root {
+  --app: #f4f6f3;
+  --surface: #ffffff;
+  --subtle: #e4eae8;
+  --line: #c5d1ce;
+  --control: #6b807d;
+  --ink: #12201f;
+  --ink-muted: #3d5452;
+  --ink-subtle: #4f6764;
+  --brand: #0f4c4a;
+  --brand-hover: #1e7a6e;
+  --brand-soft: #dceee9;
+  --brand-ink: #0f4c4a;
+  --on-brand: #f4f6f3;
+  --jade: #1e7a6e;
+  --mint: #7fc8b8;
+  --gold: #e0a43a;
+  --gold-soft: #fbefd8;
+  --gold-ink: #85570a;
+  --on-gold: #12201f;
+  --brand-side: #12201f;
+  --gold-side: #12201f;
+  --line-side: #12201f;
+  --success-bg: #ddf0ea;
+  --success-fg: #1e7a6e;
+  --danger-fg: #b23a27;
+  --band: #0f4c4a;
+  --band-ink: #f4f6f3;
+  --band-muted: #b9d9d1;
+  --band-line: #2a6763;
+  --lang-en: #1d4ed8;
+  --lang-es: #b54708;
+  --lang-ja: #be185d;
+  --popover: -6px 6px 0 0 #c5d1ce;
+
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --maxw: 1160px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --app: #101413; --surface: #171c1b; --subtle: #0b0e0e; --line: #283130; --control: #64716e;
+    --ink: #eef1f0; --ink-muted: #a4aeac; --ink-subtle: #8e9997;
+    --brand: #1d6a61; --brand-hover: #237a6f; --brand-soft: #1a2624; --brand-ink: #8fcfc0; --on-brand: #f4f6f3;
+    --jade: #3aa392; --mint: #5fa596; --gold: #d39a37; --gold-soft: #2b2414; --gold-ink: #e9b85f; --on-gold: #12201f;
+    --brand-side: #0f423c; --gold-side: #6b4a12; --line-side: #64716e;
+    --success-bg: #15241f; --success-fg: #6cc4ad; --danger-fg: #ef8f7a;
+    --band: #0b0e0e; --band-ink: #eef1f0; --band-muted: #a4aeac; --band-line: #222a29;
+    --popover: -6px 6px 0 0 #050707;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --app: #101413; --surface: #171c1b; --subtle: #0b0e0e; --line: #283130; --control: #64716e;
+  --ink: #eef1f0; --ink-muted: #a4aeac; --ink-subtle: #8e9997;
+  --brand: #1d6a61; --brand-hover: #237a6f; --brand-soft: #1a2624; --brand-ink: #8fcfc0; --on-brand: #f4f6f3;
+  --jade: #3aa392; --mint: #5fa596; --gold: #d39a37; --gold-soft: #2b2414; --gold-ink: #e9b85f; --on-gold: #12201f;
+  --brand-side: #0f423c; --gold-side: #6b4a12; --line-side: #64716e;
+  --success-bg: #15241f; --success-fg: #6cc4ad; --danger-fg: #ef8f7a;
+  --band: #0b0e0e; --band-ink: #eef1f0; --band-muted: #a4aeac; --band-line: #222a29;
+  --popover: -6px 6px 0 0 #050707;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--app);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--app);
+}
+:focus-visible { outline: 3px solid var(--jade); outline-offset: 2px; }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--font-display); font-stretch: 112%; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+
+.wrap {
+  max-width: var(--maxw); margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 720px) {
+  .wrap { padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+}
+
+.eyebrow {
+  font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--jade); font-weight: 500;
+}
+.lead { font-size: 19px; line-height: 1.55; color: var(--ink-muted); max-width: 60ch; }
+
+/* ---------- Botones del sistema ---------- */
+.btn {
+  --h: 44px; --ext: 0px; --face: transparent; --side: transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: var(--h); padding: 0 20px; border: 0; border-radius: 0; cursor: pointer;
+  font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 15px;
+  letter-spacing: 0.04em; text-transform: uppercase; text-decoration: none; white-space: nowrap;
+  background: var(--face); color: var(--ink);
+  transition: transform .08s ease, filter .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-sm { --h: 36px; padding: 0 14px; font-size: 13px; }
+.btn-lg { --h: 56px; padding: 0 28px; font-size: 18px; }
+.btn-primary { --face: var(--brand); --side: var(--brand-side); color: var(--on-brand); }
+.btn-gold { --face: var(--gold); --side: var(--gold-side); color: var(--on-gold); }
+.btn-secondary { --face: var(--surface); --side: var(--line-side); color: var(--ink); --contour: 2px; }
+.btn:not(.btn-sm):is(.btn-primary, .btn-gold, .btn-secondary) {
+  --ext: 5px;
+  height: calc(var(--h) - var(--ext));
+  margin: 0 0 var(--ext) var(--ext);
+  box-shadow: inset 0 0 0 var(--contour, 0px) var(--side),
+    -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side), -4px 4px 0 var(--side), -5px 5px 0 var(--side);
+}
+.btn-lg:is(.btn-primary, .btn-gold, .btn-secondary) {
+  --ext: 8px;
+  box-shadow: inset 0 0 0 var(--contour, 0px) var(--side),
+    -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side), -4px 4px 0 var(--side),
+    -5px 5px 0 var(--side), -6px 6px 0 var(--side), -7px 7px 0 var(--side), -8px 8px 0 var(--side);
+}
+.btn-sm.btn-primary, .btn-sm.btn-gold { box-shadow: none; }
+.btn:is(.btn-primary, .btn-gold):hover { filter: brightness(1.1); }
+.btn-secondary:hover { --face: var(--subtle); }
+.btn:not(.btn-sm):is(.btn-primary, .btn-gold, .btn-secondary):active {
+  transform: translate(calc(-1 * var(--ext)), var(--ext));
+  box-shadow: inset 0 0 0 var(--contour, 0px) var(--side);
+}
+.btn-ghost { color: var(--jade); }
+.btn-ghost:hover { --face: var(--subtle); }
+.btn:focus-visible { outline-offset: 3px; }
+.btn-block { width: calc(100% - var(--ext)); }
+
+/* Bloque de marca */
+.kn-block {
+  --ext: 5px; --face: var(--brand); --side: var(--brand-side);
+  margin: 0 0 var(--ext) var(--ext);
+  background: var(--face); color: var(--on-brand);
+  box-shadow: -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side), -4px 4px 0 var(--side), -5px 5px 0 var(--side);
+}
+.kn-deep {
+  --ext: 8px;
+  box-shadow: -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side), -4px 4px 0 var(--side),
+    -5px 5px 0 var(--side), -6px 6px 0 var(--side), -7px 7px 0 var(--side), -8px 8px 0 var(--side);
+}
+.kn-gold { --face: var(--gold); --side: var(--gold-side); color: var(--on-gold); }
+.kn-paper {
+  --face: var(--surface); --side: var(--line-side); color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--side),
+    -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side), -4px 4px 0 var(--side), -5px 5px 0 var(--side);
+}
+.kn-paper.kn-deep {
+  box-shadow: inset 0 0 0 2px var(--side),
+    -1px 1px 0 var(--side), -2px 2px 0 var(--side), -3px 3px 0 var(--side), -4px 4px 0 var(--side),
+    -5px 5px 0 var(--side), -6px 6px 0 var(--side), -7px 7px 0 var(--side), -8px 8px 0 var(--side);
+}
+
+/* ---------- Encabezado ---------- */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: var(--app); border-bottom: 1px solid var(--line);
+}
+.top .wrap { display: flex; align-items: center; gap: 24px; height: 72px; }
+.logo { display: inline-flex; text-decoration: none; }
+.logo svg { display: block; }
+.nav { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+.nav a.link {
+  font-weight: 600; font-size: 15px; text-decoration: none; color: var(--ink-muted);
+  padding: 8px 12px;
+}
+.nav a.link:hover { color: var(--ink); background: var(--subtle); }
+.nav a.link[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--gold); }
+.nav .btn { margin-left: 8px; }
+@media (max-width: 760px) {
+  .nav a.link.opt { display: none; }
+  .top .wrap { gap: 12px; height: 64px; }
+}
+@media (max-width: 400px) {
+  .nav a.link { padding: 8px 6px; font-size: 14px; }
+  .nav .btn { padding: 0 10px; margin-left: 2px; }
+}
+
+/* ---------- Héroe ---------- */
+.hero { padding-block: 64px 72px; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 56px; align-items: center; }
+.hero h1 { font-size: clamp(38px, 5.4vw, 62px); line-height: 1.02; font-weight: 800; letter-spacing: -0.01em; }
+.hero h1 .hl { color: var(--brand-ink); }
+.hero-copy { display: grid; gap: 22px; min-width: 0; }
+.ctas { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; padding-top: 6px; }
+.proof { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 0; margin: 4px 0 0; list-style: none; color: var(--ink-muted); font-size: 14px; font-weight: 600; }
+.proof li { display: inline-flex; align-items: center; gap: 8px; }
+.proof svg { color: var(--jade); flex: none; }
+@media (max-width: 900px) {
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 44px; }
+  .hero { padding-block: 40px 56px; }
+}
+
+/* Ticket de muestra */
+.ticket { padding: 0; overflow: hidden; min-width: 0; }
+.ticket-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 2px solid var(--line-side); }
+.ticket-head b { font-family: var(--font-display); font-stretch: 112%; font-size: 18px; font-weight: 800; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--success-bg); color: var(--success-fg); white-space: nowrap; }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.cust { display: flex; align-items: center; gap: 12px; padding: 12px 18px; background: var(--subtle); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.avatar { width: 34px; height: 34px; display: grid; place-items: center; background: var(--brand); color: var(--on-brand); font-family: var(--font-display); font-weight: 800; font-size: 14px; flex: none; }
+.cust .who { font-weight: 600; font-size: 14px; line-height: 1.25; min-width: 0; }
+.cust .who small { display: block; color: var(--ink-subtle); font-weight: 500; font-size: 12px; }
+.cust .pills { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.pill { font-family: var(--font-mono); font-size: 12px; padding: 3px 8px; background: var(--gold-soft); color: var(--gold-ink); font-weight: 500; white-space: nowrap; }
+.pill.mint { background: var(--brand-soft); color: var(--brand-ink); }
+.lines { list-style: none; margin: 0; padding: 4px 0; }
+.lines li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 18px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.lines li:last-child { border-bottom: 0; }
+.lines .name { min-width: 0; font-weight: 600; line-height: 1.3; }
+.lines .name small { display: flex; gap: 6px; align-items: center; color: var(--ink-subtle); font-weight: 500; font-size: 12px; margin-top: 2px; font-family: var(--font-mono); flex-wrap: wrap; }
+.lines .qty { font-family: var(--font-mono); color: var(--ink-muted); font-size: 13px; }
+.lines .amt { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; text-align: right; min-width: 78px; }
+.lang { font-family: var(--font-sans); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: #ffffff; padding: 1px 6px; text-transform: uppercase; }
+.lang.en { background: var(--lang-en); }
+.lang.es { background: var(--lang-es); }
+.lang.ja { background: var(--lang-ja); }
+.lines li.new { animation: slidein .45s cubic-bezier(.2,.8,.2,1); background: var(--brand-soft); transition: background 1.6s ease; }
+.lines li.settled { background: transparent; }
+@keyframes slidein { from { transform: translateX(-12px); opacity: .2; } to { transform: none; opacity: 1; } }
+.ticket-foot { display: grid; gap: 14px; padding: 16px 18px 18px; border-top: 2px solid var(--line-side); }
+.total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.total span { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+.total strong { font-family: var(--font-display); font-stretch: 112%; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.scanbar { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12px; color: var(--ink-subtle); padding: 8px 18px; border-bottom: 1px solid var(--line); }
+.scanbar .beam { width: 10px; height: 10px; background: var(--jade); flex: none; }
+.scanbar.flash .beam { animation: beep .5s ease; }
+@keyframes beep { 0% { transform: scale(1); } 40% { transform: scale(1.6); background: var(--gold); } 100% { transform: scale(1); } }
+.scanbar code { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mock-note { font-size: 12px; color: var(--ink-subtle); margin-top: 6px; text-align: right; }
+
+/* ---------- Catálogo ---------- */
+.strip { border-block: 1px solid var(--line); background: var(--surface); }
+.strip .wrap { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: center; padding-block: 26px; }
+.strip .big { font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 40px; line-height: 1; color: var(--brand-ink); font-variant-numeric: tabular-nums; }
+.strip p { color: var(--ink-muted); }
+.strip .games { font-family: var(--font-mono); font-size: 13px; color: var(--ink); margin-top: 6px; }
+@media (max-width: 640px) { .strip .wrap { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+
+/* ---------- Secciones ---------- */
+.section { padding-block: 88px; }
+.section-head { display: grid; gap: 14px; max-width: 720px; margin-bottom: 44px; }
+.section-head h2 { font-size: clamp(30px, 3.6vw, 42px); line-height: 1.08; font-weight: 800; }
+@media (max-width: 640px) { .section { padding-block: 64px; } }
+
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; list-style: none; padding: 0; margin: 0; }
+.step { display: grid; gap: 12px; align-content: start; }
+.step .num {
+  width: 52px; height: 47px; display: grid; place-items: center;
+  font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 22px;
+}
+.step h3 { font-size: 21px; line-height: 1.2; font-weight: 800; }
+.step p { color: var(--ink-muted); }
+@media (max-width: 820px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+
+.features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); }
+.feat { padding: 24px 22px 28px 0; display: grid; gap: 10px; align-content: start; border-bottom: 1px solid var(--line); }
+.feat + .feat { padding-left: 22px; border-left: 1px solid var(--line); }
+.feat:nth-child(4n+1) { border-left: 0; padding-left: 0; }
+.feat .ico { width: 40px; height: 40px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-ink); }
+.feat h3 { font-size: 18px; font-weight: 800; line-height: 1.2; }
+.feat p { color: var(--ink-muted); font-size: 15px; }
+@media (max-width: 980px) {
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feat:nth-child(4n+1) { border-left: 1px solid var(--line); padding-left: 22px; }
+  .feat:nth-child(2n+1) { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 560px) {
+  .features { grid-template-columns: minmax(0, 1fr); }
+  .feat, .feat + .feat, .feat:nth-child(4n+1) { border-left: 0; padding-left: 0; padding-right: 0; }
+}
+
+/* ---------- Seguridad ---------- */
+.band { background: var(--band); color: var(--band-ink); }
+.band .eyebrow { color: var(--mint); }
+.band .lead { color: var(--band-muted); }
+.sec-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: start; }
+.sec-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--band-line); }
+.sec-list li { padding: 22px 20px 22px 0; border-bottom: 1px solid var(--band-line); display: grid; gap: 6px; align-content: start; }
+.sec-list li:nth-child(2n) { padding-left: 20px; padding-right: 0; border-left: 1px solid var(--band-line); }
+.sec-list h3 { font-size: 17px; font-weight: 800; display: flex; gap: 10px; align-items: center; }
+.sec-list h3 svg { color: var(--gold); flex: none; }
+.sec-list p { color: var(--band-muted); font-size: 15px; }
+.seal { margin-top: 28px; padding: 18px 20px; display: grid; gap: 4px; max-width: 360px; }
+.seal b { font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 20px; }
+.seal span { font-size: 14px; }
+@media (max-width: 900px) { .sec-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+@media (max-width: 560px) {
+  .sec-list { grid-template-columns: minmax(0, 1fr); }
+  .sec-list li, .sec-list li:nth-child(2n) { padding-left: 0; padding-right: 0; border-left: 0; }
+}
+
+/* ---------- Teaser de precio ---------- */
+.teaser { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; padding: 32px 36px; }
+.teaser h2 { font-size: clamp(26px, 3vw, 36px); line-height: 1.1; font-weight: 800; }
+.teaser p { margin-top: 8px; font-size: 17px; }
+.teaser .price-inline { font-family: var(--font-display); font-stretch: 112%; font-weight: 800; }
+@media (max-width: 760px) { .teaser { grid-template-columns: minmax(0, 1fr); padding: 26px 22px; } }
+
+/* ---------- Precios ---------- */
+.p-hero { padding-block: 64px 24px; }
+.p-hero .section-head { margin-bottom: 0; }
+.plan-wrap { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 48px; align-items: start; padding-block: 36px 24px; }
+.plan { padding: 30px 28px 28px; display: grid; gap: 18px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 96px); }
+.plan .tag { justify-self: start; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; font-weight: 500; }
+.plan h2 { font-size: 24px; font-weight: 800; }
+.price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.price .amt { font-family: var(--font-display); font-stretch: 118%; font-weight: 800; font-size: clamp(64px, 8vw, 88px); line-height: .95; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.price .per { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: 18px; color: var(--ink-muted); }
+.plan .fine { font-size: 14px; color: var(--ink-muted); }
+.plan .short { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; font-weight: 600; font-size: 15px; }
+.plan .short li { display: flex; gap: 10px; align-items: flex-start; }
+.plan .short svg { color: var(--jade); flex: none; margin-top: 3px; }
+.plan hr { border: 0; border-top: 1px solid var(--line); margin: 0; width: 100%; }
+@media (max-width: 900px) {
+  .plan-wrap { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .plan { position: static; }
+}
+
+.benefits { display: grid; gap: 34px; }
+.bgroup h3 { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); }
+.bgroup h3 .ico { width: 34px; height: 34px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-ink); flex: none; }
+.bgroup ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+.bgroup li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.bgroup li svg { color: var(--jade); margin-top: 4px; }
+.bgroup li b { display: block; font-weight: 600; }
+.bgroup li span { color: var(--ink-muted); font-size: 14px; }
+@media (max-width: 640px) { .bgroup ul { grid-template-columns: minmax(0, 1fr); } }
+
+.faq { display: grid; gap: 0; border-top: 2px solid var(--ink); max-width: 860px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 20px 0; font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: 18px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary .plus { width: 28px; height: 28px; display: grid; place-items: center; border: 2px solid var(--control); flex: none; transition: transform .15s ease; }
+.faq details[open] summary .plus { transform: rotate(45deg); }
+.faq details p { padding: 0 0 20px; color: var(--ink-muted); max-width: 68ch; }
+
+/* ---------- Demo ---------- */
+.demo { background: var(--surface); border-top: 1px solid var(--line); }
+.demo-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: start; }
+.demo-points { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; }
+.demo-points li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.demo-points .n { width: 28px; height: 28px; display: grid; place-items: center; background: var(--gold); color: var(--on-gold); font-family: var(--font-display); font-weight: 800; font-size: 14px; }
+.demo-points b { display: block; }
+.demo-points span { color: var(--ink-muted); font-size: 15px; }
+.wa-alt { margin-top: 28px; padding: 16px 18px; background: var(--subtle); display: grid; gap: 6px; font-size: 14px; color: var(--ink-muted); }
+.wa-alt .num { font-family: var(--font-mono); font-size: 17px; color: var(--ink); user-select: all; }
+@media (max-width: 900px) { .demo-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+
+form.card { padding: 28px; display: grid; gap: 18px; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 560px) { .row2 { grid-template-columns: minmax(0, 1fr); } form.card { padding: 22px 18px; } }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label, .field legend { font-size: 13px; font-weight: 600; color: var(--ink); padding: 0; }
+.field .hint { font-size: 12px; color: var(--ink-subtle); }
+.field input, .field select, .field textarea {
+  width: 100%; height: 44px; padding: 0 12px; font: inherit; font-size: 15px; color: var(--ink);
+  background: var(--surface); border: 2px solid var(--control); border-radius: 4px;
+}
+.field textarea { height: 84px; padding: 10px 12px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid var(--jade); outline-offset: 1px; border-color: var(--jade); }
+.field input[aria-invalid="true"] { border-color: var(--danger-fg); }
+.err { color: var(--danger-fg); font-size: 13px; font-weight: 600; }
+fieldset.field { border: 0; margin: 0; padding: 0; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+.seg label { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border: 2px solid var(--control); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--ink); background: var(--surface); }
+.seg input:checked + label { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.seg input:focus-visible + label { outline: 3px solid var(--jade); outline-offset: 2px; }
+.form-foot { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+.form-foot small { color: var(--ink-subtle); font-size: 13px; flex: 1 1 220px; }
+
+.done { padding: 28px; display: grid; gap: 16px; }
+.done h3 { font-size: 24px; font-weight: 800; }
+.done pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: 13px; background: var(--subtle); padding: 14px 16px; color: var(--ink); }
+.done .acts { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+.done .note { font-size: 13px; color: var(--ink-subtle); }
+
+/* ---------- Pie ---------- */
+.foot { border-top: 1px solid var(--line); background: var(--app); }
+.foot .wrap { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between; padding-block: 28px; font-size: 14px; color: var(--ink-subtle); }
+.foot nav { display: flex; gap: 20px; flex-wrap: wrap; }
+.foot a { text-decoration: none; font-weight: 600; color: var(--ink-muted); }
+.foot a:hover { color: var(--ink); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .lines li.new, .scanbar.flash .beam { animation: none; }
+  .btn, .faq summary .plus { transition: none; }
+}
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="10.5" y="18" width="3" height="3" fill="currentColor"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="11" y="14" width="2" height="3.5" fill="currentColor"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="8" ry="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M3 3.5V8h4.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5l8 3v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10v-6z" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2.2"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z M3 7.5l9 4.5 9-4.5 M12 12v9" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2.2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-cup" viewBox="0 0 24 24"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z M17 10h1.5a2.5 2.5 0 0 1 0 5H17 M8 3.5v2M12 3.5v2" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 3h8.5L21 12.5 12.5 21 3 11.5z" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="6.5" y="6.5" width="3" height="3" fill="currentColor"/></symbol>
+    <symbol id="i-devices" viewBox="0 0 24 24"><rect x="2.5" y="4" width="13" height="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 18h6" stroke="currentColor" stroke-width="2"/><rect x="16" y="8" width="5.5" height="12" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 9h16M4 15h16M10 3v18" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M3 13h4l4 3h5a2 2 0 0 0 0-4h-4 M7 13v7H3v-7 M14 12l4.5-2.5a1.8 1.8 0 0 1 2 3L15 17" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="i-wa" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.8 8.3c.3-.6.6-.6.9-.6h.6c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .6l-.5.7c-.1.2-.2.4 0 .6.4.7 1.6 2 3 2.5.2.1.4 0 .5-.1l.7-.8c.2-.2.4-.2.6-.1l1.8.9c.2.1.4.2.4.4 0 .5-.2 1.4-1.2 1.8-1 .5-2.6.3-4.6-1.1-2.2-1.6-3.2-3.6-3.4-4.4-.2-.8 0-1.7.4-2.2z" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#inicio" aria-label="Kanan, ir al inicio">
+      <svg viewBox="146 278 711 221" height="34" width="109" role="img" aria-label="Kanan">
+        <polygon points="176,278 857,278 857,468 827,499 146,499 146,308" fill="var(--brand-side)"/>
+        <rect x="176" y="278" width="681" height="190" fill="var(--brand)"/>
+        <g fill="var(--on-brand)">
+          <polygon points="205,305 243,305 243,363 273,333 273,305 311,305 311,345 284,372 311,399 311,441 273,441 273,413 243,383 243,441 205,441"/>
+          <polygon points="336,305 422,305 432,315 432,441 394,441 394,403 364,403 364,441 326,441 326,315"/>
+          <polygon points="595,305 681,305 691,315 691,441 653,441 653,403 623,403 623,441 585,441 585,315"/>
+          <polygon points="449,305 489,305 530,372 530,305 568,305 568,441 528,441 487,374 487,441 449,441"/>
+          <polygon points="709,305 749,305 790,372 790,305 828,305 828,441 788,441 747,374 747,441 709,441"/>
+        </g>
+        <polygon points="364,337 394,337 394,370 364,370" fill="var(--brand)"/>
+        <polygon points="623,337 653,337 653,370 623,370" fill="var(--brand)"/>
+      </svg>
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a class="link opt" href="#producto" data-nav="inicio">Producto</a>
+      <a class="link opt" href="#seguridad" data-nav="inicio">Seguridad</a>
+      <a class="link" href="#precios" data-nav="precios">Precios</a>
+      <a class="btn btn-gold btn-sm" href="#demo">Agendar demo</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ================= INICIO ================= -->
+  <div id="view-inicio" data-view="inicio">
+    <section class="hero" id="inicio">
+      <div class="wrap">
+        <div class="hero-copy">
+          <p class="eyebrow">Para tiendas de cartas, juegos y accesorios</p>
+          <h1>El punto de venta que <span class="hl">sí habla TCG.</span></h1>
+          <p class="lead">Preventas, créditos, puntos de liga y más de 10,500 productos sellados ya cargados. Hecho para tiendas como la tuya, no adaptado.</p>
+          <div class="ctas">
+            <a class="btn btn-gold btn-lg" href="#demo">Agendar mi demo</a>
+            <a class="btn btn-secondary btn-lg" href="#precios">Ver precios</a>
+          </div>
+          <ul class="proof">
+            <li><svg width="18" height="18"><use href="#i-wifi"/></svg>Sigue vendiendo sin internet</li>
+            <li><svg width="18" height="18"><use href="#i-scan"/></svg>Lector de código de barras USB</li>
+            <li><svg width="18" height="18"><use href="#i-lock"/></svg>Respaldo diario cifrado</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="ticket kn-paper kn-deep" aria-label="Ejemplo de un ticket en el mostrador de Kanan">
+            <div class="ticket-head">
+              <b>Ticket 141</b>
+              <span class="chip"><span class="dot"></span>En línea · 2 cajas</span>
+            </div>
+            <div class="cust">
+              <div class="avatar">AR</div>
+              <div class="who">Ana Ramírez<small>Cliente 10482931</small></div>
+              <div class="pills">
+                <span class="pill">320 créditos</span>
+                <span class="pill mint">45 pts liga</span>
+              </div>
+            </div>
+            <div class="scanbar" id="scanbar"><span class="beam"></span><span>Escaneado</span><code id="scancode">0820650853203</code></div>
+            <ul class="lines" id="lines">
+              <li><div class="name">Sobre de expansión<small><span class="lang en">Inglés</span> Lote 12 · tienda</small></div><span class="qty">×4</span><span class="amt">$520.00</span></li>
+              <li><div class="name">Micas mate 100 pzas<small>Accesorios · DRG-000214</small></div><span class="qty">×1</span><span class="amt">$185.00</span></li>
+              <li><div class="name">Combo frappé + galleta<small>Cafetería · bebida: moka</small></div><span class="qty">×1</span><span class="amt">$95.00</span></li>
+            </ul>
+            <div class="ticket-foot">
+              <div class="total"><span>Total</span><strong id="total">$800.00</strong></div>
+              <span class="btn btn-gold btn-block" aria-hidden="true">Cobrar</span>
+            </div>
+          </div>
+          <p class="mock-note">Ejemplo con datos ficticios.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="strip" aria-label="Catálogo incluido">
+      <div class="wrap">
+        <div class="big">10,500+</div>
+        <div>
+          <p>productos sellados y accesorios ya cargados con nombre, foto y código de barras. Escaneas la caja y Kanan la reconoce; no capturas nada a mano.</p>
+          <p class="games">Pokémon · Magic · Yu-Gi-Oh! · Lorcana · One Piece · Flesh and Blood · Dragon Shield · Ultra Pro · y más</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="producto">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Fácil de usar</p>
+          <h2>Una venta en tres pasos. Sin capacitación de días.</h2>
+          <p class="lead">Si tu equipo sabe usar un celular, sabe usar Kanan. Botones grandes, letras claras y el mismo flujo en la computadora, la tablet o el teléfono.</p>
+        </div>
+        <ol class="steps">
+          <li class="step">
+            <span class="num kn-block">1</span>
+            <h3>Escanea</h3>
+            <p>Pasa el lector por el código y el producto entra al ticket con su precio. Si es nuevo, Kanan lo busca en el catálogo con todo y foto.</p>
+          </li>
+          <li class="step">
+            <span class="num kn-block">2</span>
+            <h3>Elige al cliente</h3>
+            <p>Busca por nombre, apodo o escanea su credencial. Ves al momento sus créditos, sus puntos de liga y lo que tiene apartado en preventa.</p>
+          </li>
+          <li class="step">
+            <span class="num kn-block kn-gold">3</span>
+            <h3>Cobra</h3>
+            <p>Efectivo, tarjeta, transferencia o créditos, o una mezcla. El inventario se descuenta solo y la venta queda en el historial.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0" aria-labelledby="hecho-para">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Hecho para tu tipo de tienda</p>
+          <h2 id="hecho-para">Lo que un POS genérico no entiende de una tienda de cartas.</h2>
+        </div>
+        <div class="features">
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-cal"/></svg></span><h3>Preventas con anticipo</h3><p>Aparta producto antes del lanzamiento, recibe abonos con fecha y ve cuántas piezas ya están comprometidas.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-star"/></svg></span><h3>Créditos y puntos de liga</h3><p>Da crédito de tienda por cartas o torneos y lleva los puntos de la liga de cada jugador, con historial.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-box"/></svg></span><h3>Tienda y bodega</h3><p>Stock separado por ubicación y por lote de compra, con su proveedor y costo. Vende primero lo que entró primero.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-devices"/></svg></span><h3>Varias cajas a la vez</h3><p>Los tickets abiertos se comparten entre la computadora, la tablet y el celular en tiempo real.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-cup"/></svg></span><h3>Cafetería y combos</h3><p>Vende snacks y bebidas en el mismo ticket. Arma combos y el cliente elige su bebida al cobrar.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-tag"/></svg></span><h3>Etiquetas con código</h3><p>Imprime etiquetas con código de barras para lo que no trae uno, con el prefijo de tu tienda.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-scan"/></svg></span><h3>Idioma del producto</h3><p>Etiqueta de color para inglés, español, japonés y chino, para no confundir un sobre con otro.</p></div>
+          <div class="feat"><span class="ico"><svg width="22" height="22"><use href="#i-sheet"/></svg></span><h3>Reportes a Excel</h3><p>Ventas, inventario y movimientos se exportan a Excel con un clic para tu contador o tu socio.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section band" id="seguridad">
+      <div class="wrap sec-grid">
+        <div>
+          <div class="section-head" style="margin-bottom:0">
+            <p class="eyebrow">Seguro por diseño</p>
+            <h2>Tu tienda, tus datos. Nadie más los ve.</h2>
+            <p class="lead">Cada tienda tiene su propia base de datos, separada de las demás. Las reglas de acceso viven en el servidor, no en la pantalla, así que nadie se las puede saltar.</p>
+          </div>
+          <div class="seal kn-block kn-gold">
+            <b>Respaldo todos los días</b>
+            <span>Ventas, inventario, clientes y usuarios, cifrados. Lo más que podrías perder es un día.</span>
+          </div>
+        </div>
+        <ul class="sec-list">
+          <li><h3><svg width="20" height="20"><use href="#i-db"/></svg>Una base por tienda</h3><p>Tu información no comparte espacio con otros negocios. Entras por tu propia dirección, como tutienda.kananpos.com.</p></li>
+          <li><h3><svg width="20" height="20"><use href="#i-user"/></svg>Cada quien con su rol</h3><p>El mostrador vende y cobra. Solo el administrador ve costos, da de alta inventario y crea usuarios.</p></li>
+          <li><h3><svg width="20" height="20"><use href="#i-history"/></svg>Nada se borra en silencio</h3><p>Cada venta, ajuste y cancelación queda registrada con quién la hizo y por qué.</p></li>
+          <li><h3><svg width="20" height="20"><use href="#i-wifi"/></svg>Sin internet, sin pérdidas</h3><p>Las ventas se guardan en el dispositivo y se envían solas al volver la conexión, sin duplicarse.</p></li>
+          <li><h3><svg width="20" height="20"><use href="#i-lock"/></svg>Acceso solo con invitación</h3><p>No existe registro público. Solo entran las cuentas que tú das de alta.</p></li>
+          <li><h3><svg width="20" height="20"><use href="#i-shield"/></svg>Conexión protegida</h3><p>Todo viaja cifrado y la app no se puede incrustar en otros sitios para engañar a tu equipo.</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="teaser kn-paper kn-deep">
+          <div>
+            <p class="eyebrow">Precio de introducción</p>
+            <h2>Todo Kanan por <span class="price-inline">$500 MXN</span> al mes.</h2>
+            <p style="color:var(--ink-muted)">Un solo plan con todas las funciones, el catálogo TCG y los respaldos diarios.</p>
+          </div>
+          <a class="btn btn-primary btn-lg" href="#precios">Ver todo lo que incluye</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= PRECIOS ================= -->
+  <div id="view-precios" data-view="precios" hidden>
+    <section class="p-hero">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Precios</p>
+          <h2 style="font-size:clamp(36px,5vw,56px);line-height:1.02">Un plan. Todo incluido.</h2>
+          <p class="lead">Sin módulos extra ni cobros por función. Pagas una mensualidad y tu tienda tiene Kanan completo desde el primer día.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap plan-wrap">
+        <aside class="plan kn-paper kn-deep" aria-label="Plan Kanan">
+          <span class="tag kn-gold" style="background:var(--gold);color:var(--on-gold)">Precio de introducción</span>
+          <h2>Kanan para tu tienda</h2>
+          <div class="price"><span class="amt">$500</span><span class="per">MXN / mes</span></div>
+          <p class="fine">Oferta por tiempo limitado. Si contratas ahora, conservas este precio todo el tiempo que uses Kanan.</p>
+          <a class="btn btn-gold btn-lg btn-block" href="#demo">Agendar mi demo</a>
+          <hr>
+          <ul class="short">
+            <li><svg width="16" height="16"><use href="#i-check"/></svg>Todas las funciones de venta e inventario</li>
+            <li><svg width="16" height="16"><use href="#i-check"/></svg>Catálogo TCG con más de 10,500 productos</li>
+            <li><svg width="16" height="16"><use href="#i-check"/></svg>Base de datos propia y respaldo diario</li>
+            <li><svg width="16" height="16"><use href="#i-check"/></svg>Computadora, tablet y celular</li>
+            <li><svg width="16" height="16"><use href="#i-check"/></svg>Te ayudamos a arrancar</li>
+          </ul>
+        </aside>
+
+        <div class="benefits">
+          <div class="bgroup">
+            <h3><span class="ico"><svg width="20" height="20"><use href="#i-cash"/></svg></span>Mostrador y cobro</h3>
+            <ul>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Venta con lector USB</b><span>Escaneas y el producto entra al ticket.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Varios métodos de pago</b><span>Efectivo, tarjeta, transferencia y créditos en un mismo ticket.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Tickets compartidos</b><span>Abiertos en varios dispositivos a la vez, en tiempo real.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Funciona sin internet</b><span>Sigues vendiendo y todo se sincroniza al volver la red.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Cafetería y combos</b><span>Combos con bebida a elegir en el mismo cobro.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Notas y cancelaciones</b><span>Cancelación con motivo y registro de quién la hizo.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Día de operación a tu medida</b><span>Las ventas de madrugada cuentan para el día correcto.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Historial de ventas</b><span>Folio consecutivo y búsqueda por cliente o fecha.</span></div></li>
+            </ul>
+          </div>
+
+          <div class="bgroup">
+            <h3><span class="ico"><svg width="20" height="20"><use href="#i-box"/></svg></span>Inventario</h3>
+            <ul>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Tienda y bodega</b><span>Stock separado y movimientos entre ubicaciones.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Compras por lote</b><span>Con proveedor, costo y salida de primero en entrar.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Conteo y ajustes</b><span>Corrige diferencias con motivo y sin perder el rastro.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Etiquetas con código de barras</b><span>Con el prefijo de tu tienda para lo que no trae código.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Categorías a tu medida</b><span>Cada juego como subcategoría de TCG, más accesorios y lo que vendas.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Idioma del producto</b><span>Inglés, español, japonés o chino con etiqueta de color.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Fotos de producto</b><span>Desde el catálogo o con la cámara del dispositivo.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Exportar a Excel</b><span>Inventario, ventas y movimientos.</span></div></li>
+            </ul>
+          </div>
+
+          <div class="bgroup">
+            <h3><span class="ico"><svg width="20" height="20"><use href="#i-star"/></svg></span>Clientes y comunidad</h3>
+            <ul>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Preventas con anticipo</b><span>Abonos con fecha y piezas apartadas por cliente.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Créditos de tienda</b><span>Se otorgan y se usan como forma de pago.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Puntos de liga</b><span>Total e historial por jugador.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Credencial con código</b><span>El cliente se identifica escaneando su código.</span></div></li>
+            </ul>
+          </div>
+
+          <div class="bgroup">
+            <h3><span class="ico"><svg width="20" height="20"><use href="#i-scan"/></svg></span>Catálogo TCG</h3>
+            <ul>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Más de 10,500 productos</b><span>Sellado y accesorios con nombre y foto.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Se actualiza</b><span>Llegan los lanzamientos nuevos sin que captures nada.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Búsqueda en español</b><span>"Micas", "tapete", "carpeta" o un color y aparece.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Solo lo que vendes</b><span>Ligas los juegos de tu tienda y el resto no estorba.</span></div></li>
+            </ul>
+          </div>
+
+          <div class="bgroup">
+            <h3><span class="ico"><svg width="20" height="20"><use href="#i-shield"/></svg></span>Seguridad y respaldos</h3>
+            <ul>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Base de datos propia</b><span>Separada de cualquier otra tienda.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Roles admin y mostrador</b><span>Costos y altas solo para el administrador.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Respaldo diario cifrado</b><span>Y uno completo con fotos cada domingo.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Historial de todo</b><span>Ventas, ajustes y cancelaciones con responsable.</span></div></li>
+            </ul>
+          </div>
+
+          <div class="bgroup">
+            <h3><span class="ico"><svg width="20" height="20"><use href="#i-hand"/></svg></span>Acompañamiento</h3>
+            <ul>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Alta de tu tienda</b><span>Con tu nombre y tu propia dirección en kananpos.com.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Configuración inicial</b><span>Categorías, juegos del catálogo y usuarios de tu equipo.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Actualizaciones incluidas</b><span>Las funciones nuevas te llegan sin costo extra.</span></div></li>
+              <li><svg width="16" height="16"><use href="#i-check"/></svg><div><b>Soporte por WhatsApp</b><span>Hablas con quien hace Kanan.</span></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:56px">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Preguntas frecuentes</p>
+          <h2>Antes de agendar</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>¿Necesito comprar equipo especial?<span class="plus" aria-hidden="true">+</span></summary>
+            <p>No. Kanan funciona en el navegador de la computadora, la tablet o el celular que ya tienes. Para escanear rápido basta un lector de código de barras USB común.</p>
+          </details>
+          <details>
+            <summary>¿Qué pasa si se va el internet?<span class="plus" aria-hidden="true">+</span></summary>
+            <p>Sigues abriendo tickets, escaneando y cobrando. Las operaciones se guardan en el dispositivo y se envían solas, en orden y sin duplicarse, cuando vuelve la conexión. Lo único que necesita red es buscar productos nuevos en el catálogo y subir fotos.</p>
+          </details>
+          <details>
+            <summary>¿Quién puede ver mis ventas y mis costos?<span class="plus" aria-hidden="true">+</span></summary>
+            <p>Solo las personas que tú das de alta. Tu tienda tiene su propia base de datos y el personal de mostrador no ve costos ni puede modificar inventario o usuarios.</p>
+          </details>
+          <details>
+            <summary>Ya tengo mi inventario en Excel, ¿lo pierdo?<span class="plus" aria-hidden="true">+</span></summary>
+            <p>No. En la demo revisamos cómo tienes tu inventario hoy y cómo pasarlo a Kanan con su inventario inicial, para que arranques con tus existencias reales.</p>
+          </details>
+          <details>
+            <summary>¿El precio de $500 MXN es para siempre?<span class="plus" aria-hidden="true">+</span></summary>
+            <p>Sí, para tu tienda. Si contratas con el precio de introducción, pagas $500 MXN al mes todo el tiempo que uses Kanan, aunque después cambiemos el precio. Lo que dura poco es la oferta: más adelante el precio puede cambiar, pero solo para las tiendas que contraten después de ese cambio.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= DEMO (en ambas vistas) ================= -->
+  <section class="section demo" id="demo" aria-labelledby="demo-title">
+    <div class="wrap demo-grid">
+      <div>
+        <div class="section-head" style="margin-bottom:0">
+          <p class="eyebrow">Demo de 20 minutos</p>
+          <h2 id="demo-title">Ve Kanan funcionando con productos de tu tienda.</h2>
+          <p class="lead">Déjanos tus datos y te escribimos por WhatsApp para elegir horario. Sin compromiso.</p>
+        </div>
+        <ul class="demo-points">
+          <li><span class="n">1</span><div><b>Nos cuentas cómo vendes hoy</b><span>Qué juegos manejas, cuántas cajas y cómo llevas tu inventario.</span></div></li>
+          <li><span class="n">2</span><div><b>Hacemos una venta real juntos</b><span>Escaneo, cliente con créditos, preventa y cobro.</span></div></li>
+          <li><span class="n">3</span><div><b>Te decimos cómo arrancar</b><span>Qué se carga, cuánto tarda y qué necesitas.</span></div></li>
+        </ul>
+        <div class="wa-alt">
+          <span>¿Prefieres escribirnos directo? WhatsApp:</span>
+          <span class="num" id="wa-num">+52 999 746 6670</span>
+        </div>
+      </div>
+
+      <div>
+        <form class="card kn-paper kn-deep" id="demo-form" novalidate>
+          <div class="row2">
+            <div class="field">
+              <label for="f-nombre">Tu nombre</label>
+              <input id="f-nombre" name="nombre" autocomplete="name" required placeholder="Ej. Daniela Torres">
+            </div>
+            <div class="field">
+              <label for="f-tienda">Nombre de la tienda</label>
+              <input id="f-tienda" name="tienda" autocomplete="organization" required placeholder="Ej. Dragón Azul Games">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="f-tel">WhatsApp</label>
+              <input id="f-tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" required placeholder="10 dígitos">
+              <span class="err" id="e-tel" hidden>Escribe un número de 10 dígitos.</span>
+            </div>
+            <div class="field">
+              <label for="f-ciudad">Ciudad</label>
+              <input id="f-ciudad" name="ciudad" autocomplete="address-level2" placeholder="Ej. Guadalajara">
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-tipo">¿Qué vendes principalmente?</label>
+            <select id="f-tipo" name="tipo">
+              <option>Cartas coleccionables (TCG)</option>
+              <option>Juegos de mesa y TCG</option>
+              <option>TCG con cafetería o área de juego</option>
+              <option>Accesorios y coleccionables</option>
+              <option>Otro tipo de tienda</option>
+            </select>
+          </div>
+          <fieldset class="field">
+            <legend>¿Cómo llevas tu inventario hoy?</legend>
+            <div class="seg">
+              <input type="radio" name="hoy" id="h1" value="Excel o libreta" checked><label for="h1">Excel o libreta</label>
+              <input type="radio" name="hoy" id="h2" value="Otro punto de venta"><label for="h2">Otro punto de venta</label>
+              <input type="radio" name="hoy" id="h3" value="No lo llevo"><label for="h3">No lo llevo</label>
+            </div>
+          </fieldset>
+          <fieldset class="field">
+            <legend>¿Cuándo te queda mejor la demo?</legend>
+            <div class="seg">
+              <input type="radio" name="hora" id="t1" value="mañana" checked><label for="t1">Mañana</label>
+              <input type="radio" name="hora" id="t2" value="tarde"><label for="t2">Tarde</label>
+              <input type="radio" name="hora" id="t3" value="noche"><label for="t3">Noche</label>
+            </div>
+          </fieldset>
+          <div class="form-foot">
+            <button class="btn btn-gold btn-lg" type="submit">Agendar mi demo</button>
+            <small>Solo usamos tus datos para contactarte sobre la demo.</small>
+          </div>
+        </form>
+
+        <div class="done kn-paper kn-deep" id="demo-done" hidden tabindex="-1">
+          <p class="eyebrow">Último paso</p>
+          <h3>Envíanos este mensaje por WhatsApp</h3>
+          <p style="color:var(--ink-muted)">Así te contestamos en tu número y elegimos horario. Si el botón no abre WhatsApp, copia el mensaje y mándalo al <b id="wa-num-2">+52 999 746 6670</b>.</p>
+          <pre id="wa-msg"></pre>
+          <div class="acts">
+            <a class="btn btn-primary" id="wa-link" href="#" target="_blank" rel="noopener"><svg width="18" height="18"><use href="#i-wa"/></svg>Abrir WhatsApp</a>
+            <button class="btn btn-secondary" type="button" id="copy-msg">Copiar mensaje</button>
+            <button class="btn btn-ghost btn-sm" type="button" id="edit-form">Editar datos</button>
+          </div>
+          <p class="note" id="copy-note" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© 2026 Kanan POS · kananpos.com</span>
+    <nav aria-label="Pie">
+      <a href="#producto">Producto</a>
+      <a href="#seguridad">Seguridad</a>
+      <a href="#precios">Precios</a>
+      <a href="#demo">Agendar demo</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  /* Número de WhatsApp de ventas: cámbialo aquí (código de país + número, solo dígitos). */
+  var WHATSAPP = '529997466670';
+
+  function pretty(n) {
+    var d = n.replace(/\D/g, '');
+    if (d.length === 12 && d.indexOf('52') === 0) return '+52 ' + d.slice(2, 5) + ' ' + d.slice(5, 8) + ' ' + d.slice(8);
+    return '+' + d;
+  }
+  document.getElementById('wa-num').textContent = pretty(WHATSAPP);
+  document.getElementById('wa-num-2').textContent = pretty(WHATSAPP);
+
+  /* ---------- Vistas por hash ---------- */
+  var views = { inicio: document.getElementById('view-inicio'), precios: document.getElementById('view-precios') };
+  var current = 'inicio';
+  function show(name) {
+    current = name;
+    Object.keys(views).forEach(function (k) { views[k].hidden = k !== name; });
+    document.querySelectorAll('.nav a.link').forEach(function (a) {
+      if (a.getAttribute('href') === '#precios' && name === 'precios') a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  }
+  function route(initial) {
+    var h = (location.hash || '').slice(1);
+    if (h === 'precios') {
+      show('precios');
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (h === 'demo') {
+      if (initial) show('inicio');
+    } else {
+      show('inicio');
+    }
+    var el = h && document.getElementById(h);
+    if (el) {
+      requestAnimationFrame(function () { el.scrollIntoView({ block: 'start' }); });
+    } else if (!initial) {
+      window.scrollTo(0, 0);
+    }
+  }
+  window.addEventListener('hashchange', function () { route(false); });
+  route(true);
+
+  /* ---------- Ticket de muestra: escaneos ---------- */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var catalog = [
+    { name: 'Caja de sobres', meta: '<span class="lang ja">Japonés</span> Lote 9 · tienda', price: 1450, code: '4521329391220' },
+    { name: 'Deck box de colores', meta: 'Accesorios · DRG-000087', price: 260, code: '5706569200152' },
+    { name: 'Sobre de expansión', meta: '<span class="lang es">Español</span> Lote 14 · tienda', price: 130, code: '0820650851278' },
+    { name: 'Playmat liso', meta: 'Accesorios · DRG-000301', price: 420, code: '0074427155071' }
+  ];
+  var base = 800, total = base, i = 0;
+  var lines = document.getElementById('lines');
+  var totalEl = document.getElementById('total');
+  var scanbar = document.getElementById('scanbar');
+  var scancode = document.getElementById('scancode');
+  function money(n) { return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function scan() {
+    if (document.hidden) return;
+    var items = lines.querySelectorAll('li');
+    if (items.length >= 5) {
+      items[0].remove();
+      var first = lines.querySelectorAll('li');
+      total = 0;
+      first.forEach(function (li) { total += Number(li.dataset.amt || 0); });
+    }
+    var p = catalog[i % catalog.length]; i++;
+    var li = document.createElement('li');
+    li.className = 'new';
+    li.dataset.amt = p.price;
+    li.innerHTML = '<div class="name">' + p.name + '<small>' + p.meta + '</small></div><span class="qty">×1</span><span class="amt">' + money(p.price) + '</span>';
+    lines.appendChild(li);
+    total += p.price;
+    totalEl.textContent = money(total);
+    scancode.textContent = p.code;
+    scanbar.classList.remove('flash'); void scanbar.offsetWidth; scanbar.classList.add('flash');
+    setTimeout(function () { li.classList.add('settled'); }, 900);
+  }
+  lines.querySelectorAll('li').forEach(function (li, k) { li.dataset.amt = [520, 185, 95][k]; });
+  if (!reduce) setInterval(scan, 3200);
+
+  /* ---------- Formulario de demo ---------- */
+  var form = document.getElementById('demo-form');
+  var done = document.getElementById('demo-done');
+  var msgEl = document.getElementById('wa-msg');
+  var link = document.getElementById('wa-link');
+  var note = document.getElementById('copy-note');
+  var message = '';
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ok = true;
+    ['f-nombre', 'f-tienda'].forEach(function (id) {
+      var el = document.getElementById(id);
+      var bad = !el.value.trim();
+      el.setAttribute('aria-invalid', bad ? 'true' : 'false');
+      if (bad) ok = false;
+    });
+    var tel = document.getElementById('f-tel');
+    var digits = tel.value.replace(/\D/g, '');
+    var telBad = digits.length < 10;
+    tel.setAttribute('aria-invalid', telBad ? 'true' : 'false');
+    document.getElementById('e-tel').hidden = !telBad;
+    if (telBad) ok = false;
+    if (!ok) {
+      var firstBad = form.querySelector('[aria-invalid="true"]');
+      if (firstBad) firstBad.focus();
+      return;
+    }
+    var d = new FormData(form);
+    message = 'Hola, quiero agendar una demo de Kanan.\n\n' +
+      'Nombre: ' + d.get('nombre').trim() + '\n' +
+      'Tienda: ' + d.get('tienda').trim() + '\n' +
+      (d.get('ciudad').trim() ? 'Ciudad: ' + d.get('ciudad').trim() + '\n' : '') +
+      'WhatsApp: ' + digits + '\n' +
+      'Vendo: ' + d.get('tipo') + '\n' +
+      'Inventario hoy: ' + d.get('hoy') + '\n' +
+      'Horario preferido: ' + d.get('hora');
+    msgEl.textContent = message;
+    link.href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(message);
+    note.textContent = '';
+    form.hidden = true;
+    done.hidden = false;
+    done.focus();
+  });
+
+  document.getElementById('copy-msg').addEventListener('click', function () {
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents(msgEl);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      note.textContent = 'Mensaje seleccionado. Cópialo con Ctrl+C o mantén presionado.';
+    }
+    try {
+      navigator.clipboard.writeText(message).then(function () { note.textContent = 'Mensaje copiado.'; }, fallback);
+    } catch (err) { fallback(); }
+  });
+  document.getElementById('edit-form').addEventListener('click', function () {
+    done.hidden = true; form.hidden = false;
+    document.getElementById('f-nombre').focus();
+  });
+})();
+</script>
+</body>
+</html>
