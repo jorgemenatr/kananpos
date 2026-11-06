@@ -49,14 +49,17 @@ Deno.serve(async (req) => {
   if (!fullName) return json({ error: 'El nombre es obligatorio.' }, 400)
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'El correo no parece válido.' }, 400)
   if (role !== 'admin' && role !== 'mostrador') return json({ error: 'Rol inválido.' }, 400)
-  if (password.length < 8) return json({ error: 'La contraseña temporal debe tener al menos 8 caracteres.' }, 400)
+  if (password.length < 10 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+    return json({ error: 'La contraseña temporal debe tener al menos 10 caracteres, con letras y números.' }, 400)
+  }
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName },
+    // must_change_password: la app le pide cambiarla en su primer inicio de sesión.
+    user_metadata: { full_name: fullName, must_change_password: true },
   })
   if (createError || !created.user) {
     const msg = createError?.message ?? 'No se pudo crear el usuario'

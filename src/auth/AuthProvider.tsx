@@ -47,7 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .maybeSingle()
       .then(({ data, error }) => {
-        if (!active || error) return
+        if (!active) return
+        // Un admin desactivó este usuario (check_request en la base): fuera.
+        if (error?.hint === 'usuario_desactivado') {
+          saveCachedProfile(null)
+          void supabase.auth.signOut({ scope: 'local' })
+          return
+        }
+        if (error) return
         const p = (data as Profile | null) ?? null
         setProfile(p)
         saveCachedProfile(p)
@@ -109,6 +116,9 @@ function translateAuthError(error: unknown): string {
   }
   if (e.code === 'email_not_confirmed' || msg.includes('email not confirmed')) {
     return 'El correo de esta cuenta no está confirmado. Pide a un administrador que lo confirme en Supabase.'
+  }
+  if (e.code === 'user_banned' || msg.includes('banned')) {
+    return 'Tu usuario está desactivado. Habla con un administrador del negocio.'
   }
   if (e.status === 429) return 'Demasiados intentos. Espera un momento e intenta de nuevo.'
   return `No se pudo iniciar sesión: ${e.message ?? 'error desconocido'}`

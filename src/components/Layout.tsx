@@ -5,6 +5,7 @@ import { appTitle, useSettings } from '../lib/settings'
 import { ROLE_LABELS } from '../lib/types'
 import { inventoryStore } from '../store/inventoryStore'
 import { useInventory } from '../store/useInventory'
+import { ChangePasswordModal } from './ChangePasswordModal'
 import { ConnectionBadge } from './ConnectionBadge'
 import { Icon, type IconName } from './Icon'
 import { KananMark } from './KananMark'
@@ -61,6 +62,12 @@ export function Layout() {
   const { queue, online } = useInventory()
   // Menú lateral en el celular (en pantallas md+ siempre está visible).
   const [menuOpen, setMenuOpen] = useState(false)
+  // Cambiar mi contraseña: 'required' si entró con una contraseña temporal.
+  const [passwordModal, setPasswordModal] = useState<'optional' | 'required' | null>(null)
+  const mustChangePassword = user?.user_metadata?.must_change_password === true
+  useEffect(() => {
+    if (mustChangePassword) setPasswordModal((m) => m ?? 'required')
+  }, [mustChangePassword])
 
   // Se cierra al navegar.
   useEffect(() => setMenuOpen(false), [pathname])
@@ -194,6 +201,18 @@ export function Layout() {
             </div>
             <button
               type="button"
+              onClick={() => {
+                setMenuOpen(false)
+                setPasswordModal('optional')
+              }}
+              title="Cambiar mi contraseña"
+              aria-label="Cambiar mi contraseña"
+              className="grid size-control-md shrink-0 cursor-pointer place-items-center rounded-md text-nav-ink-muted hover:bg-nav-hover hover:text-nav-ink focus-visible:outline-nav-focus"
+            >
+              <Icon name="key" size={18} />
+            </button>
+            <button
+              type="button"
               onClick={() => void handleSignOut()}
               title="Cerrar sesión"
               aria-label="Cerrar sesión"
@@ -212,6 +231,16 @@ export function Layout() {
         </main>
       </div>
       {simulator && <ScannerSimulator />}
+      {passwordModal && (
+        <ChangePasswordModal
+          required={passwordModal === 'required'}
+          onClose={() => setPasswordModal(null)}
+          onSignOut={() => {
+            setPasswordModal(null)
+            void handleSignOut()
+          }}
+        />
+      )}
     </div>
   )
 }
