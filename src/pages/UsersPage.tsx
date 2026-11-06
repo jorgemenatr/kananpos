@@ -189,7 +189,8 @@ function UserFormModal({
     if (!name.trim()) return setError('El nombre es obligatorio.')
     if (!user) {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError('El correo no parece válido.')
-      if (password.length < 8) return setError('La contraseña temporal debe tener al menos 8 caracteres.')
+      if (password.length < 10 || !/[a-z]/i.test(password) || !/\d/.test(password))
+        return setError('La contraseña temporal debe tener al menos 10 caracteres, con letras y números.')
     }
     setSaving(true)
     try {
@@ -270,7 +271,7 @@ function UserFormModal({
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
               />
-              <p className="mt-1 text-caption text-ink-subtle">Mínimo 8 caracteres. Compártela con la persona para que inicie sesión.</p>
+              <p className="mt-1 text-caption text-ink-subtle">Mínimo 10 caracteres, con letras y números. Compártela con la persona para que inicie sesión.</p>
             </div>
           )}
 

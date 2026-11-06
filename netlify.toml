@@ -10,3 +10,17 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Encabezados de seguridad: la app no se puede incrustar en otro sitio
+# (evita clickjacking), el navegador no adivina tipos de archivo y no se
+# filtra la URL a otros sitios. La cámara solo para este mismo sitio
+# (foto de productos).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=(), payment=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
