@@ -373,6 +373,9 @@ async function cmdAlta(opts) {
   console.log('\n1. Cerrando el registro público (solo un admin crea usuarios)')
   await api('PATCH', `/projects/${ref}/config/auth`, {
     disable_signup: true,
+    // Contraseñas de al menos 10 caracteres con letras y números.
+    password_min_length: 10,
+    password_required_characters: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789',
     site_url: siteUrl,
     uri_allow_list: `https://*.${tenants.dominio_base}/**`,
   })
@@ -407,7 +410,8 @@ async function cmdAlta(opts) {
   console.log('\n6. Primer administrador')
   const { anon, service } = await apiKeys(ref)
   const url = `https://${ref}.supabase.co`
-  const password = randomBytes(9).toString('base64url')
+  // Siempre con letras y números (lo exige password_required_characters).
+  const password = `${randomBytes(12).toString('base64url')}k7`
   const res = await fetch(`${url}/auth/v1/admin/users`, {
     method: 'POST',
     headers: { apikey: service, Authorization: `Bearer ${service}`, 'Content-Type': 'application/json' },

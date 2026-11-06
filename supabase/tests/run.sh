@@ -54,6 +54,12 @@ $P -d ${DB}_lang -f supabase/tests/idioma_antes.sql
 for f in supabase/migrations/*.sql; do [[ "$(basename "$f")" < "$LANG_MIG" ]] || $P -d ${DB}_lang -f "$f"; done
 $P -d ${DB}_lang -f supabase/tests/idioma_test.sql
 
+# Permisos: sin escrituras directas a ventas, créditos, puntos e historial.
+$P -d postgres -c "drop database if exists ${DB}_perm" -c "create database ${DB}_perm"
+$P -d ${DB}_perm -f supabase/tests/00_supabase_stub.sql
+for f in supabase/migrations/*.sql; do $P -d ${DB}_perm -f "$f"; done
+$P -d ${DB}_perm -f supabase/tests/permisos_test.sql
+
 # ---------- 10. Concurrencia ----------
 # Dos ventas al mismo tiempo de un producto con 5 en tienda (3 + 3 piezas):
 # solo una puede pasar. Y un traspaso tienda → bodega al mismo tiempo que una
