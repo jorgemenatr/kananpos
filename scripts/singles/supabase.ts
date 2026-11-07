@@ -23,7 +23,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export class RestClient {
   readonly url: string
-  private readonly key: string
+  /** service_role: solo en el servidor (job). */
+  readonly key: string
 
   constructor(url: string, key: string) {
     this.url = url.replace(/\/+$/, '')

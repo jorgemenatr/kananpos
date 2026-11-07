@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon'
 import { LanguageTag, languageSearchText } from '../components/LanguageTag'
 import { MoreMenu } from '../components/MoreMenu'
 import { NewProductDialog } from '../components/NewProductDialog'
+import { ProductDetailModal } from '../components/ProductDetailModal'
 import { ProductEditModal } from '../components/ProductEditModal'
 import { ProductImage } from '../components/ProductImage'
 import { Segmented } from '../components/Segmented'
@@ -43,6 +44,9 @@ const scopeQty = (p: CachedProduct, scope: StockScope) =>
 const SCOPE_LABELS: Record<StockScope, string> = { store: 'en tienda', warehouse: 'en bodega', total: 'en total' }
 
 const VIEW_KEY = 'hachiko.inventario.vista'
+
+/** Singles en la vista: sin (por defecto), con, o solo singles. */
+type SinglesMode = 'exclude' | 'include' | 'only'
 const PAGE = 60
 const collator = new Intl.Collator('es-MX', { sensitivity: 'base', numeric: true })
 
@@ -61,6 +65,9 @@ export function InventoryPage() {
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
   const [editing, setEditing] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<string | null>(null)
+  // Singles (cartas sueltas): fuera por defecto, para que no llenen la vista normal.
+  const [singles, setSingles] = useState<SinglesMode>('exclude')
   const [view, setViewState] = useState<View>(loadView)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
@@ -88,7 +95,15 @@ export function InventoryPage() {
     }
   }
 
-  const all = useMemo(() => Object.values(products), [products])
+  const everything = useMemo(() => Object.values(products), [products])
+  const hasSingles = useMemo(() => everything.some((p) => p.tcg_product_id), [everything])
+  const all = useMemo(
+    () =>
+      singles === 'include'
+        ? everything
+        : everything.filter((p) => (singles === 'only' ? !!p.tcg_product_id : !p.tcg_product_id)),
+    [everything, singles],
+  )
   const { tree, values: categoryValues } = useCategories()
 
   // Categorías que ya no existen (productos viejos): se pueden filtrar igual.
@@ -140,7 +155,7 @@ export function InventoryPage() {
   }, [all, search, category, stock, sort, scope])
 
   // Al cambiar los filtros se vuelve a la primera página.
-  useEffect(() => setLimit(PAGE), [search, category, stock, sort, view, scope])
+  useEffect(() => setLimit(PAGE), [search, category, stock, sort, view, scope, singles])
 
   const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit])
 
@@ -180,7 +195,7 @@ export function InventoryPage() {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: key === 'quantity' || key === 'price' ? -1 : 1 }))
   }
 
-  const filtersActive = search.trim() !== '' || category !== '' || stock !== 'all'
+  const filtersActive = search.trim() !== '' || category !== '' || stock !== 'all' || singles !== 'exclude'
   // En el celular, Tienda/Bodega/Total también va dentro de Filtros.
   const mobileFiltersActive = filtersActive || scope !== 'total'
   // En el celular las categorías, la búsqueda y los filtros van plegados.
@@ -354,6 +369,18 @@ export function InventoryPage() {
           <option value="out">Sin stock ({SCOPE_LABELS[scope]})</option>
           <option value="alert">Sin stock o bajo en tienda</option>
         </select>
+        {(hasSingles || singles !== 'exclude') && (
+          <select
+            value={singles}
+            onChange={(e) => setSingles(e.target.value as SinglesMode)}
+            aria-label="Singles"
+            className="field w-auto cursor-pointer"
+          >
+            <option value="exclude">Sin singles</option>
+            <option value="include">Con singles</option>
+            <option value="only">Solo singles</option>
+          </select>
+        )}
         {/* En la lista de md+ se ordena con los encabezados (en el celular la lista no los tiene). */}
         <select
           value={`${sort.key}:${sort.dir}`}
@@ -377,6 +404,7 @@ export function InventoryPage() {
               setSearch('')
               setCategory('')
               setStock('all')
+              setSingles('exclude')
             }}
             className="btn btn-ghost btn-sm"
           >
@@ -389,13 +417,15 @@ export function InventoryPage() {
       {!productsLoaded && <p className="py-10 text-center text-ink-subtle">Cargando inventario…</p>}
       {productsLoaded && filtered.length === 0 && (
         <p className="card px-4 py-10 text-center text-ink-subtle">
-          {all.length === 0 ? 'Aún no hay productos. Dalos de alta desde Escaneo.' : 'Ningún producto coincide con los filtros.'}
+          {everything.length === 0 ? 'Aún no hay productos. Dalos de alta desde Escaneo.' : 'Ningún producto coincide con los filtros.'}
         </p>
       )}
 
-      {visible.length > 0 && view === 'grid' && <ProductGrid products={visible} scope={scope} onEdit={isAdmin ? setEditing : undefined} />}
+      {visible.length > 0 && view === 'grid' && (
+        <ProductGrid products={visible} scope={scope} onEdit={isAdmin ? setEditing : undefined} onOpen={setViewing} />
+      )}
       {visible.length > 0 && view === 'list' && (
-        <ProductTable products={visible} scope={scope} sort={sort} onSort={toggleSort} onEdit={isAdmin ? setEditing : undefined} />
+        <ProductTable products={visible} scope={scope} sort={sort} onSort={toggleSort} onEdit={isAdmin ? setEditing : undefined} onOpen={setViewing} />
       )}
 
       {filtered.length > visible.length && (
@@ -419,6 +449,21 @@ export function InventoryPage() {
                 'Si no lleva inventario (comida, torneos), márcalo así con el lápiz.',
             )
           }}
+        />
+      )}
+
+      {viewing && (
+        <ProductDetailModal
+          productId={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={
+            isAdmin
+              ? () => {
+                  setEditing(viewing)
+                  setViewing(null)
+                }
+              : undefined
+          }
         />
       )}
 
@@ -484,6 +529,31 @@ function EditButton({ product, onEdit }: { product: CachedProduct; onEdit?: (id:
   )
 }
 
+/** Abre la vista general del producto (tocar la foto o el nombre). */
+function OpenButton({
+  product,
+  onOpen,
+  className = '',
+  children,
+}: {
+  product: CachedProduct
+  onOpen?: (id: string) => void
+  className?: string
+  children: ReactNode
+}) {
+  if (!onOpen || !editable(product)) return <div className={className}>{children}</div>
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(product.id)}
+      title="Ver producto"
+      className={`block cursor-pointer text-left hover:opacity-85 ${className}`}
+    >
+      {children}
+    </button>
+  )
+}
+
 /** Piezas del filtro elegido; el color sale SIEMPRE del stock de tienda. */
 function StockBadge({ product, scope }: { product: CachedProduct; scope: StockScope }) {
   if (!tracksStock(product)) return <span className="badge badge-neutral">Sin inventario</span>
@@ -512,19 +582,33 @@ function PendingBadge({ product }: { product: CachedProduct }) {
   return product.pending ? <span className="badge badge-warning">Pendiente</span> : null
 }
 
-function ProductGrid({ products, scope, onEdit }: { products: CachedProduct[]; scope: StockScope; onEdit?: (id: string) => void }) {
+function ProductGrid({
+  products,
+  scope,
+  onEdit,
+  onOpen,
+}: {
+  products: CachedProduct[]
+  scope: StockScope
+  onEdit?: (id: string) => void
+  onOpen?: (id: string) => void
+}) {
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
       {products.map((p) => (
         <li key={p.barcode} className="card flex flex-col overflow-hidden">
           {/* Cuadrada, con o sin foto (las fotos se guardan cuadradas): todas las tarjetas miden igual. */}
-          <ProductImage path={p.image_url} alt={p.name} className="aspect-square w-full border-0 border-b" />
+          <OpenButton product={p} onOpen={onOpen}>
+            <ProductImage path={p.image_url} alt={p.name} className="aspect-square w-full border-0 border-b" />
+          </OpenButton>
           <div className="flex flex-1 flex-col gap-1 p-3">
             <div className="flex items-start gap-1">
-              <p className="line-clamp-2 flex-1 text-label text-ink" title={p.name}>
-                <LanguageTag language={p.language} className="mr-1.5" />
-                {p.name}
-              </p>
+              <OpenButton product={p} onOpen={onOpen} className="flex-1">
+                <p className="line-clamp-2 text-label text-ink" title={p.name}>
+                  <LanguageTag language={p.language} className="mr-1.5" />
+                  {p.name}
+                </p>
+              </OpenButton>
               <EditButton product={p} onEdit={onEdit} />
             </div>
             {p.category && <p className="truncate text-caption text-ink-subtle">{p.category}</p>}
@@ -547,12 +631,14 @@ function ProductTable({
   sort,
   onSort,
   onEdit,
+  onOpen,
 }: {
   products: CachedProduct[]
   scope: StockScope
   sort: { key: SortKey; dir: 1 | -1 }
   onSort: (key: SortKey) => void
   onEdit?: (id: string) => void
+  onOpen?: (id: string) => void
 }) {
   const th = (key: SortKey, label: string, right = false) => (
     <th
@@ -576,13 +662,17 @@ function ProductTable({
       <ul className="divide-y divide-line md:hidden">
         {products.map((p) => (
           <li key={p.barcode} className="flex items-start gap-3 px-4 py-3">
-            <ProductImage path={p.image_url} alt="" className="size-12 shrink-0 rounded-xs" />
+            <OpenButton product={p} onOpen={onOpen} className="shrink-0">
+              <ProductImage path={p.image_url} alt="" className="size-12 rounded-xs" />
+            </OpenButton>
             <div className="min-w-0 flex-1 space-y-0.5">
-              <p className="flex flex-wrap items-center gap-2 font-medium">
-                <LanguageTag language={p.language} />
-                {p.name}
-                <PendingBadge product={p} />
-              </p>
+              <OpenButton product={p} onOpen={onOpen}>
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  <LanguageTag language={p.language} />
+                  {p.name}
+                  <PendingBadge product={p} />
+                </p>
+              </OpenButton>
               <p className="font-mono text-[13px] break-all text-ink-muted">{p.barcode}</p>
               {p.category && <p className="text-caption text-ink-muted">{p.category}</p>}
               <div className="flex items-baseline justify-between gap-3 pt-1">
@@ -627,11 +717,13 @@ function ProductTable({
                 <ProductImage path={p.image_url} alt="" className="size-10 rounded-xs" />
               </td>
               <td className="h-row px-4 font-medium">
-                <span className="flex items-center gap-2">
-                  <LanguageTag language={p.language} />
-                  {p.name}
-                  <PendingBadge product={p} />
-                </span>
+                <OpenButton product={p} onOpen={onOpen}>
+                  <span className="flex items-center gap-2">
+                    <LanguageTag language={p.language} />
+                    {p.name}
+                    <PendingBadge product={p} />
+                  </span>
+                </OpenButton>
               </td>
               <td className="h-row px-4 font-mono text-[13px] whitespace-nowrap text-ink-muted">{p.barcode}</td>
               <td className="h-row px-4 whitespace-nowrap text-ink-muted">{p.category ?? '—'}</td>

@@ -26,6 +26,10 @@ TCGCSV ──(1 vez al día)──▶ proyecto central kananpos-catalogo ──(
    su última copia (marcas `products_copied_through` / `prices_copied_through`).
    `tcg_games.catalog_status` dice `downloading` → `ready` (o `error`).
 
+3. **Historial** (central → cada tienda). Solo de las cartas que la tienda tiene en
+   inventario: completo para las que acaban de entrar y los últimos 3 días para las demás.
+   La app lo muestra en la vista general del producto.
+
 Todo es upsert: correrla dos veces no duplica nada. Cada descarga y cada copia queda en
 `catalog_sync_runs` del central (`npm run singles -- corridas`).
 
@@ -42,6 +46,15 @@ por funciones con límite. No hay exportación ni API de precios de mercado en b
 (por ejemplo, Pokémon completo son 441), y un día normal, unas 2,300. El límite de
 TCGCSV es de 10,000 al día.
 
+## Producto sellado y accesorios
+
+El catálogo de sellado (el del alta por código de barras) también pasa por el central:
+`npm run singles -- sellado` junta las fuentes de todas las tiendas
+(`enabled_catalog_sources`), las descarga una vez con `scripts/importar-catalogo.mjs
+--central` (peticiones de una en una con pausa) a la tabla `catalog_products` del
+central y copia a cada tienda solo las suyas. Lo corre el workflow **Importar catálogo
+TCG** cada lunes; también `npm run clientes -- catalogo` y el alta de un cliente.
+
 ## Correrla
 
 Automática: workflow **Sincronizar singles** (`.github/workflows/sincronizar-singles.yml`),
@@ -57,6 +70,7 @@ npm run singles -- sync --forzar                 # bajar todo aunque TCGCSV no h
 npm run singles -- sync --solo-copiar            # sin descargar: solo copiar a las tiendas
 npm run singles -- juegos                        # lista curada y su categoryId
 npm run singles -- muestra --juego pokemon --sets 2  # qué entra y qué no (no guarda nada)
+npm run singles -- sellado                       # catálogo de sellado vía el central (lunes)
 npm run singles -- corridas                      # últimas corridas
 npm run singles -- migrar-central                # migraciones de supabase/catalogo
 ```

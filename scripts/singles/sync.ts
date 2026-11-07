@@ -72,6 +72,14 @@ export interface CopyPrice {
   updated_at: string
 }
 
+export interface HistoryRow {
+  product_id: number
+  subtype: string
+  price_date: string
+  market_usd: number | null
+  mid_usd: number | null
+}
+
 export type RunStatus = 'running' | 'ok' | 'partial' | 'error' | 'skipped'
 
 export interface SetError {
@@ -100,6 +108,8 @@ export interface CentralStore {
     afterSubtype: string,
     limit: number,
   ): Promise<CopyPrice[]>
+  /** Historial (solo cambios) de esas cartas desde una fecha (AAAA-MM-DD; null = todo). */
+  exportHistory(productIds: number[], since: string | null): Promise<HistoryRow[]>
 }
 
 // ---------- tienda ----------
@@ -133,6 +143,9 @@ export interface TenantStore {
   upsertProducts(rows: Omit<CopyProduct, 'updated_at'>[]): Promise<void>
   upsertPrices(rows: Omit<CopyPrice, 'updated_at'>[]): Promise<void>
   countProducts(gameId: number): Promise<number>
+  /** Cartas del inventario y si ya tienen historial; null si falta la migración. */
+  historyTargets(): Promise<{ tcg_product_id: number; has_history: boolean }[] | null>
+  upsertHistory(rows: HistoryRow[]): Promise<void>
 }
 
 // ---------- opciones y resultado ----------
@@ -251,9 +264,48 @@ export async function runSync(deps: SyncDeps, opts: SyncOptions = {}): Promise<S
         if (!g) continue
         summary.copies.push(await copyGame(central, t, g, { log, now }))
       }
+      // Historial de precios de las cartas que la tienda tiene en inventario.
+      try {
+        const h = await copyHistory(central, t, { now })
+        if (h === null) summary.warnings.push(`${t.name}: le falta la migración del historial de precios; se omite.`)
+        else if (h.rows) log(`  → ${t.name}: historial ${JSON.stringify(h)}`)
+      } catch (e) {
+        summary.warnings.push(`${t.name}: historial de precios: ${errMsg(e)}`)
+      }
     }
   }
   return summary
+}
+
+const HISTORY_CHUNK = 200
+/** Días hacia atrás que se vuelven a copiar del historial de cartas que ya lo tienen. */
+const HISTORY_OVERLAP_DAYS = 3
+
+/**
+ * Copia el historial de precios de las cartas del inventario de una tienda:
+ * completo para las que aún no lo tienen y los últimos días para las demás.
+ * Idempotente (upsert por carta + subtipo + fecha). null = falta la migración.
+ */
+export async function copyHistory(
+  central: CentralStore,
+  tenant: TenantStore,
+  { now = () => new Date() }: { now?: () => Date } = {},
+): Promise<{ cards: number; rows: number } | null> {
+  const targets = await tenant.historyTargets()
+  if (targets === null) return null
+  const since = new Date(now().getTime() - HISTORY_OVERLAP_DAYS * 864e5).toISOString().slice(0, 10)
+  let rows = 0
+  for (const [ids, from] of [
+    [targets.filter((t) => !t.has_history).map((t) => t.tcg_product_id), null],
+    [targets.filter((t) => t.has_history).map((t) => t.tcg_product_id), since],
+  ] as const) {
+    for (let i = 0; i < ids.length; i += HISTORY_CHUNK) {
+      const page = await central.exportHistory(ids.slice(i, i + HISTORY_CHUNK), from)
+      if (page.length) await tenant.upsertHistory(page)
+      rows += page.length
+    }
+  }
+  return { cards: targets.length, rows }
 }
 
 // =====================================================================

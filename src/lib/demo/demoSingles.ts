@@ -223,6 +223,18 @@ export function demoSingles(products: Product[], prefix = 'DEMO') {
       if (g.enabled && g.catalog_status === 'empty') g.catalog_status = 'pending'
       return { game_id: g.id, slug: g.slug, enabled: g.enabled, catalog_status: g.catalog_status, stock: 0 }
     },
+    product_price_history: (a) => {
+      const p = products.find((x) => x.id === a.p_product_id)
+      const c = p && cardOf(p.tcg_product_id)
+      const base = c?.[7].find(([sub]) => sub === p?.tcg_subtype)
+      if (!base || base[1] == null) return []
+      // Algunos días de cambios hacia atrás (solo demo).
+      return Array.from({ length: 8 }, (_, i) => {
+        const d = new Date(now - i * 4 * 864e5).toISOString().slice(0, 10)
+        const f = 1 - i * 0.03 + (i % 3 === 0 ? 0.02 : 0)
+        return { price_date: d, market_usd: Math.round((base[1] as number) * f * 100) / 100, mid_usd: base[2] }
+      })
+    },
     tcg_game_stock: (a) =>
       products
         .filter((p) => p.tcg_product_id && cardOf(p.tcg_product_id)?.[1] === Number(a.p_game_id))

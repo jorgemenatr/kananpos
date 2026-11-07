@@ -162,3 +162,28 @@ end $$;
 reset role;
 
 select 'OK: catálogo central';
+
+-- ---------- 8. Sellado y exportar historial (20261109000100) ----------
+set role service_role;
+do $$
+declare v_ids bigint[] := array(select id from public.tcg_products);
+begin
+  insert into public.catalog_products (id, category_id, game, source, group_id, name)
+  values (1, 3, 'Pokemon', 'pokemon', 1, 'Booster Box') on conflict (id) do update set name = excluded.name;
+  insert into public.catalog_products (id, category_id, game, source, group_id, name)
+  values (1, 3, 'Pokemon', 'pokemon', 1, 'Booster Box') on conflict (id) do update set name = excluded.name;
+  if (select count(*) from public.catalog_products) <> 1 then raise exception 'FALLA 8a'; end if;
+  if (select count(*) from public.catalog_export_history(v_ids)) <> 4 then raise exception 'FALLA 8b: %', (select count(*) from public.catalog_export_history(v_ids)); end if;
+  if (select count(*) from public.catalog_export_history(v_ids, '2026-11-07')) <> 1 then raise exception 'FALLA 8c'; end if;
+end $$;
+reset role;
+set role authenticated;
+do $$ begin
+  begin
+    perform 1 from public.catalog_products;
+    raise exception 'FALLA 8d: la app leyó el central';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+select 'OK: sellado e historial del central';

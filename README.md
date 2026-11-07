@@ -66,6 +66,7 @@ Las migraciones están en `supabase/migrations/` y deben aplicarse **en orden**:
 | `20261107000100_singles_catalogo.sql` | **Singles:** copia local del catálogo de singles (`tcg_games`, `tcg_sets`, `tcg_products`, `tcg_prices`) y juegos activos de la tienda (`store_tcg_settings`). La llena el job [Sincronizar singles](scripts/singles/README.md); la app no lee `tcg_prices` directo. Se puede aplicar antes o después de publicar |
 | `20261108000100_singles_configuracion.sql` | **Singles, configuración:** reglas de precio de la tienda (`store_pricing_rules`: tipo de cambio de venta, multiplicador, redondeo, % por estado, precio mínimo, % para revisar), historial del tipo de cambio (`store_fx_rate_history`, vista `fx_rate_history`), `set_tcg_game_enabled` y búsqueda `search_singles` (trigramas, solo juegos activos). Aplicar **antes** de publicar la app nueva |
 | `20261108000200_singles_inventario.sql` | **Singles, inventario:** variantes en `products` (`tcg_product_id`, `tcg_subtype`, `card_condition` + idioma), `add_single_stock` (alta como compra → lote FIFO), `single_variants`, `singles_reference` (referencia y costo FIFO), `apply_single_prices` + `product_price_changes`. Aplicar **antes** de publicar la app nueva |
+| `20261109000100_singles_historial.sql` | **Singles:** historial de precios de las cartas en inventario (`tcg_price_history`, `product_price_history`) y la búsqueda ordenada de lo más nuevo a lo más viejo. Se puede aplicar antes o después de publicar |
 
 **Opción A: SQL Editor (lo más sencillo).** En el dashboard ve a **SQL Editor → New query**,
 pega el contenido de cada archivo en orden y presiona **Run**.
@@ -357,6 +358,12 @@ usuario con sesión iniciada). Para corregir, se registran puntos negativos.
 
 ## Catálogo TCG
 
+> **Con el catálogo central** (`CATALOGO_REF`), el sellado también se descarga **una sola
+> vez** al proyecto central (solo las fuentes que usa alguna tienda) y a cada tienda se le
+> copian solo las suyas: `npm run singles -- sellado`. El workflow de los lunes,
+> `npm run clientes -- catalogo` y el alta de un cliente ya lo hacen así cuando existe
+> `CATALOGO_REF`; sin ella siguen como abajo (una descarga por tienda).
+
 Para no capturar a mano nombre, foto y descripción del producto sellado, la app tiene una
 copia del catálogo de **TCGplayer** (vía [tcgcsv.com](https://tcgcsv.com), un espejo
 público y gratuito que se actualiza a diario). Incluye **producto sellado** (cajas,
@@ -489,6 +496,11 @@ En la app (todo lo de admin, salvo la referencia en el mostrador):
   `src/lib/pricing.ts`. Se ve en la ficha del producto, en el mostrador y en el alta
   ("Ref. $185 · actualizado hoy"; el desglose al pasar el cursor o tocarlo). **El precio
   de venta nunca cambia solo:** botón "Aplicar precio sugerido" con confirmación.
+- **Inventario.** Los singles no aparecen por defecto; el filtro "Sin singles / Con singles /
+  Solo singles" los muestra. Tocar la foto o el nombre de cualquier producto abre su **vista
+  general** (foto, datos, existencias, lotes para admin y, en singles, el precio de
+  referencia y el **historial del precio de mercado**, que el job copia cada noche solo
+  para las cartas que la tienda tiene en inventario).
 - **Inventario → Revisar precios** (`/revisar-precios`). Singles cuyo precio difiere del
   sugerido más del %. Se aplican uno por uno o los seleccionados (queda en
   `product_price_changes`), con el margen contra el costo FIFO.

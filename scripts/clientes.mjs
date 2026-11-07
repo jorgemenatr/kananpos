@@ -459,12 +459,23 @@ async function cmdAlta(opts) {
 
   if (juegos.length) {
     console.log('\n7. Catálogo TCG (solo sus juegos; puede tardar unos minutos)')
-    const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'importar-catalogo.mjs')], {
-      cwd: ROOT,
-      stdio: 'inherit',
-      env: { ...process.env, SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: service },
-    })
+    const r = process.env.CATALOGO_REF
+      ? catalogoCentral(ref)
+      : spawnSync(process.execPath, [join(ROOT, 'scripts', 'importar-catalogo.mjs')], {
+          cwd: ROOT,
+          stdio: 'inherit',
+          env: { ...process.env, SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: service },
+        })
     if (r.status !== 0) console.log(`  ⚠️ No se pudo cargar el catálogo. Reintenta con: npm run clientes -- catalogo --ref ${ref}`)
+    if (process.env.CATALOGO_REF) {
+      // Lista de juegos de singles para su Configuración (no descarga cartas: aún no activa ninguno).
+      const s = spawnSync(
+        process.execPath,
+        ['--experimental-strip-types', '--no-warnings=ExperimentalWarning', join(ROOT, 'scripts', 'singles', 'cli.ts'), 'sync', '--ref', ref],
+        { cwd: ROOT, stdio: 'inherit', env: process.env },
+      )
+      if (s.status !== 0) console.log(`  ⚠️ No se pudo cargar la lista de singles. Reintenta con: npm run singles -- sync --ref ${ref}`)
+    }
   }
 
   // La anon key es pública por diseño; la service_role nunca va al registro.
@@ -479,7 +490,29 @@ Y en Netlify → Domain management → Add domain alias: ${subdominio}.${tenants
 ${created ? `\nAcceso del admin (la app le pide cambiarla al entrar):\n  ${correo}\n  ${password}\n` : ''}`)
 }
 
+/**
+ * Con catálogo central (CATALOGO_REF): una descarga para todos y copia a cada
+ * tienda solo sus fuentes (scripts/singles/cli.ts sellado).
+ */
+function catalogoCentral(ref, passthrough = []) {
+  const juegos = passthrough.indexOf('--juegos')
+  const args = [
+    '--experimental-strip-types',
+    '--no-warnings=ExperimentalWarning',
+    join(ROOT, 'scripts', 'singles', 'cli.ts'),
+    'sellado',
+    ...(ref ? ['--ref', ref] : []),
+    ...(juegos >= 0 && passthrough[juegos + 1] ? ['--juegos', passthrough[juegos + 1]] : []),
+  ]
+  return spawnSync(process.execPath, args, { cwd: ROOT, stdio: 'inherit', env: process.env })
+}
+
 async function cmdCatalogo(opts, passthrough) {
+  if (process.env.CATALOGO_REF) {
+    const r = catalogoCentral(typeof opts.ref === 'string' ? opts.ref : null, passthrough)
+    if (r.status !== 0) process.exitCode = 1
+    return
+  }
   let failed = 0
   for (const ref of clientRefs(opts)) {
     console.log(`\n=== ${ref}`)

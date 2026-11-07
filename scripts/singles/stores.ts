@@ -11,6 +11,7 @@ import type {
   CopyPrice,
   CopyProduct,
   CopySet,
+  HistoryRow,
   RunStatus,
   SetError,
   TenantGame,
@@ -127,6 +128,10 @@ export class CentralRest implements CentralStore {
       p_limit: limit,
     })
   }
+
+  exportHistory(productIds: number[], since: string | null) {
+    return this.db.rpc<HistoryRow[]>('catalog_export_history', { p_product_ids: productIds, p_since: since })
+  }
 }
 
 export class TenantRest implements TenantStore {
@@ -192,5 +197,18 @@ export class TenantRest implements TenantStore {
 
   countProducts(gameId: number) {
     return this.db.count('tcg_products', `game_id=eq.${gameId}`)
+  }
+
+  async historyTargets() {
+    try {
+      return await this.db.rpc<{ tcg_product_id: number; has_history: boolean }[]>('tcg_history_targets', {})
+    } catch (e) {
+      if (e instanceof RestError && (e.status === 404 || e.code === 'PGRST202' || e.code === '42883')) return null
+      throw e
+    }
+  }
+
+  upsertHistory(rows: HistoryRow[]) {
+    return this.db.upsert('tcg_price_history', rows as unknown as Record<string, unknown>[], 'product_id,subtype,price_date')
   }
 }

@@ -419,3 +419,22 @@ export function useSingleRefs(productIds: string[]): Map<string, SingleReference
   }, [key, version])
   return map
 }
+
+// ---------------------------------------------------------------------
+// Historial de precios (USD) de un producto del inventario
+// ---------------------------------------------------------------------
+export interface PriceHistoryRow {
+  price_date: string
+  market_usd: number | null
+  mid_usd: number | null
+}
+
+/** Cambios del precio de referencia de un single (más reciente primero). Base sin la migración: []. */
+export async function productPriceHistory(productId: string): Promise<PriceHistoryRow[]> {
+  const { data, error } = await supabase.rpc('product_price_history', { p_product_id: productId })
+  if (error) {
+    if (error.code === 'PGRST202' || error.code === '42883') return []
+    throw error
+  }
+  return ((data ?? []) as PriceHistoryRow[]).map((r) => ({ ...r, market_usd: n(r.market_usd), mid_usd: n(r.mid_usd) }))
+}

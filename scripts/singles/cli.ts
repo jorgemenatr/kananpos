@@ -12,6 +12,11 @@
  *   muestra --juego <slug> [--sets 3]
  *        Baja unos sets SIN guardar nada y muestra qué cuenta como single y
  *        qué queda fuera (para revisar la regla is_single).
+ *   sellado [--juegos pokemon,dragon-shield] [--ref <id>] [--sin-descargar]
+ *        Catálogo de PRODUCTO SELLADO y accesorios: descarga UNA vez al central
+ *        las fuentes que usa alguna tienda (scripts/importar-catalogo.mjs
+ *        --central) y copia a cada tienda solo las suyas. Lo corre el workflow
+ *        "Importar catálogo TCG" (lunes).
  *   corridas [--n 20]      Últimas corridas registradas en catalog_sync_runs.
  *   migrar-central [--prueba]
  *        Aplica supabase/catalogo/migrations al proyecto central (CATALOGO_REF).
@@ -25,12 +30,15 @@
  *
  * Nada de esto corre en el navegador.
  */
+import { spawnSync } from 'node:child_process'
 import { appendFileSync, readdirSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { loadCuratedGames, resolveGames } from './games.ts'
 import { createProvider } from './providers/index.ts'
 import { TcgCsvProvider } from './providers/tcgcsv.ts'
 import { CentralRest, TenantRest } from './stores.ts'
-import { centralClient, runSql, tenantClient, tenantRefs } from './supabase.ts'
+import { copySealed, planSealed, SEALED_COLUMNS, type SealedCentral, type SealedRow, type SealedTenant } from './sealed.ts'
+import { centralClient, RestError, runSql, tenantClient, tenantRefs } from './supabase.ts'
 import { runSync, type SyncSummary, type TenantStore } from './sync.ts'
 
 type Opts = Record<string, string | true>
@@ -124,6 +132,83 @@ function report(s: SyncSummary, requests: number | null, ms: number) {
   }
 }
 
+// ---------- producto sellado ----------
+async function cmdSellado(opts: Opts) {
+  const fuentes = JSON.parse(readFileSync(new URL('../../src/lib/catalogSources.json', import.meta.url), 'utf8')) as {
+    juegos: Record<string, unknown>
+    accesorios: Record<string, unknown>
+  }
+  const known = new Set([...Object.keys(fuentes.juegos), ...Object.keys(fuentes.accesorios)])
+  const only = slugList(opts.juegos)
+  for (const j of only ?? []) if (!known.has(j)) throw new Error(`Fuente desconocida: "${j}". Disponibles: ${[...known].join(', ')}`)
+
+  const { rest: central } = await centralClient()
+  const tenants: SealedTenant[] = []
+  for (const t of tenantRefs(refArg(opts.ref))) {
+    try {
+      const db = await tenantClient(t)
+      tenants.push({
+        ref: t.ref,
+        name: t.name,
+        enabledSources: async () => {
+          try {
+            return await db.rpc<string[]>('enabled_catalog_sources', {})
+          } catch (e) {
+            if (e instanceof RestError && (e.status === 404 || e.code === 'PGRST202')) return null
+            throw e
+          }
+        },
+        upsert: (rows) => db.upsert('catalog_products', rows, 'id', 500),
+      })
+    } catch (e) {
+      console.warn(`⚠️ ${t.name}: ${(e as Error).message}`)
+    }
+  }
+
+  const plan = await planSealed(tenants, known, only)
+  for (const w of plan.warnings) console.warn(`⚠️ ${w}`)
+  if (!plan.download.length) {
+    console.log('Ninguna tienda tiene fuentes del catálogo ligadas a sus categorías: no hay nada que importar.')
+    return
+  }
+
+  // 1. Una sola descarga al central.
+  if (opts['sin-descargar'] !== true) {
+    console.log(`Descargando al catálogo central: ${plan.download.join(', ')}`)
+    const importer = fileURLToPath(new URL('../importar-catalogo.mjs', import.meta.url))
+    const r = spawnSync(process.execPath, [importer, '--central', '--juegos', plan.download.join(',')], {
+      stdio: 'inherit',
+      env: { ...process.env, SUPABASE_URL: central.url, SUPABASE_SERVICE_ROLE_KEY: central.key },
+    })
+    // Si falló a medias, igual se copia lo que ya está en el central.
+    if (r.status !== 0) {
+      console.warn('⚠️ La descarga terminó con error; se copia a las tiendas lo que ya hay en el central.')
+      process.exitCode = 1
+    }
+  }
+
+  // 2. Copia a cada tienda solo sus fuentes.
+  const reader: SealedCentral = {
+    page: (source, after, limit) =>
+      central.select<SealedRow>(
+        `catalog_products?select=${SEALED_COLUMNS}&source=eq.${encodeURIComponent(source)}&id=gt.${after}&order=id&limit=${limit}`,
+      ),
+  }
+  const lines = ['', '### Copia a las tiendas', '', '| Tienda | Fuente | Productos |', '| --- | --- | ---: |']
+  for (const { tenant, sources, withSource } of plan.tenants) {
+    try {
+      const counts = await copySealed(reader, tenant, sources, withSource)
+      for (const [source, n] of Object.entries(counts)) lines.push(`| ${tenant.name} | ${source} | ${n.toLocaleString('es-MX')} |`)
+      console.log(`  → ${tenant.name}: ${JSON.stringify(counts)}`)
+    } catch (e) {
+      lines.push(`| ${tenant.name} | — | error: ${(e as Error).message} |`)
+      console.error(`  → ${tenant.name}: ${(e as Error).message}`)
+      process.exitCode = 1
+    }
+  }
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`)
+}
+
 // ---------- juegos ----------
 async function cmdJuegos() {
   const provider = createProvider(process.env.CATALOG_PROVIDER ?? 'tcgcsv')
@@ -215,6 +300,7 @@ commit;`,
 
 const COMMANDS: Record<string, (opts: Opts) => Promise<void>> = {
   sync: cmdSync,
+  sellado: cmdSellado,
   juegos: cmdJuegos,
   muestra: cmdMuestra,
   corridas: cmdCorridas,

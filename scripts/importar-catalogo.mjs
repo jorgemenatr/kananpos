@@ -10,6 +10,9 @@
  *   npm run catalogo -- --juegos dragon-shield,ultra-pro-pokemon
  *   npm run catalogo -- --desde 2025-01-01    # solo sets publicados desde esa fecha
  *   npm run catalogo -- --prueba              # no escribe nada: guarda un JSON local
+ *   ... --central --juegos a,b                # escribe en el catálogo CENTRAL (kananpos-catalogo);
+ *                                             # lo usa `npm run singles -- sellado`, que luego
+ *                                             # copia a cada tienda solo sus fuentes
  *
  * Variables de entorno (en .env.catalogo o en los secrets de GitHub Actions):
  *   SUPABASE_URL               https://xxxx.supabase.co
@@ -26,8 +29,11 @@
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 
 const TCGCSV = 'https://tcgcsv.com/tcgplayer'
-const USER_AGENT = 'inventario-hachiko/1.0 (importador de catalogo)'
-const CONCURRENCY = 4
+// Reglas de TCGCSV (https://tcgcsv.com/docs): User-Agent propio con versión y
+// una pausa entre peticiones; de una en una, nunca en paralelo.
+const USER_AGENT = 'KananPOS-CatalogImport/1.1.0'
+const CONCURRENCY = 1
+const PAUSE_MS = 150
 const BATCH = 500
 
 // Fuentes que se pueden importar: src/lib/catalogSources.json (la misma lista
@@ -60,7 +66,7 @@ const ANTERIORES = ['pokemon', 'magic', 'yugioh', 'lorcana', 'flesh-and-blood', 
 // ---------- argumentos ----------
 function parseArgs(argv) {
   // null = los que vende el negocio (se leen de la base).
-  const args = { juegos: null, desde: null, prueba: false }
+  const args = { juegos: null, desde: null, prueba: false, central: false }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     const value = () => {
@@ -71,6 +77,7 @@ function parseArgs(argv) {
     if (a.startsWith('--juegos')) args.juegos = value().split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
     else if (a.startsWith('--desde')) args.desde = value()
     else if (a === '--prueba') args.prueba = true
+    else if (a === '--central') args.central = true
     else if (a === '--ayuda' || a === '--help') {
       console.log(`Juegos disponibles: ${Object.keys(JUEGOS).join(', ')}`)
       console.log('Por defecto: los ligados a las categorías del negocio')
@@ -83,6 +90,7 @@ function parseArgs(argv) {
     }
   }
   if (args.desde && !/^\d{4}-\d{2}-\d{2}$/.test(args.desde)) throw new Error('--desde debe ser AAAA-MM-DD')
+  if (args.central && !args.juegos?.length) throw new Error('--central necesita --juegos')
   return args
 }
 
@@ -90,6 +98,7 @@ function parseArgs(argv) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function getJson(url, attempt = 1) {
+  await sleep(PAUSE_MS)
   try {
     const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -177,10 +186,8 @@ async function importCategory(categoryId, { desde, nombre, grupo, producto, tema
 
   let done = 0
   const perGroup = await mapLimit(groups, CONCURRENCY, async (g) => {
-    const [products, prices] = await Promise.all([
-      getJson(`${TCGCSV}/${categoryId}/${g.groupId}/products`),
-      getJson(`${TCGCSV}/${categoryId}/${g.groupId}/prices`).catch(() => []),
-    ])
+    const products = await getJson(`${TCGCSV}/${categoryId}/${g.groupId}/products`)
+    const prices = await getJson(`${TCGCSV}/${categoryId}/${g.groupId}/prices`).catch(() => [])
     const price = new Map()
     for (const p of prices) {
       // Para sellado casi siempre hay un solo subtipo ("Normal").
@@ -294,8 +301,9 @@ async function main() {
   }
 
   // ¿La base guarda la fuente? (también decide qué importar si no hay --juegos)
-  const configured = url && key ? await enabledSources(url, key) : null
-  const withSource = configured !== null || (args.prueba && !url)
+  // El central no tiene categorías: siempre guarda la fuente y usa --juegos.
+  const configured = url && key && !args.central ? await enabledSources(url, key) : null
+  const withSource = args.central || configured !== null || (args.prueba && !url)
   if (!args.juegos) {
     if (configured === null) {
       args.juegos = ANTERIORES

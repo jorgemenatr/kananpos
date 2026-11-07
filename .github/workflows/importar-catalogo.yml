@@ -1,9 +1,12 @@
 # Actualiza el catálogo TCG (producto sellado) en Supabase.
 # - Corre solo cada lunes.
 # - También a mano: pestaña Actions → "Importar catálogo TCG" → Run workflow.
-# Un solo proyecto: secrets SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.
-# Varios clientes: secret SUPABASE_ACCESS_TOKEN (importa en todos los de
-# src/tenants.json). Settings → Secrets and variables → Actions. Sin ellos, no hace nada.
+# Con catálogo central (secrets SUPABASE_ACCESS_TOKEN y CATALOGO_REF): descarga
+# UNA vez al central las fuentes que usa alguna tienda y copia a cada tienda
+# solo las suyas (npm run singles -- sellado).
+# Sin central: SUPABASE_ACCESS_TOKEN importa en cada cliente de src/tenants.json;
+# un solo proyecto: SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.
+# Settings → Secrets and variables → Actions. Sin ellos, no hace nada.
 name: Importar catálogo TCG
 
 on:
@@ -22,7 +25,7 @@ permissions:
 jobs:
   importar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -33,8 +36,18 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CATALOGO_REF: ${{ secrets.CATALOGO_REF }}
           JUEGOS: ${{ github.event.inputs.juegos }}
         run: |
+          # Catálogo central: una descarga para todos y copia a cada tienda.
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$CATALOGO_REF" ]; then
+            if [ -n "$JUEGOS" ]; then
+              node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/singles/cli.ts sellado --juegos "$JUEGOS"
+            else
+              node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/singles/cli.ts sellado
+            fi
+            exit 0
+          fi
           # Varios clientes: importa en cada uno (scripts/clientes.mjs).
           if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
             if [ -n "$JUEGOS" ]; then

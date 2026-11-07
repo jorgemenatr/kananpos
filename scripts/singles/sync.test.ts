@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { CuratedGame, ResolvedGame } from './games.ts'
 import {
+  copyHistory,
   runSync,
+  type HistoryRow,
   type CentralGame,
   type CentralStore,
   type CopyPrice,
@@ -94,6 +96,7 @@ class FakeCentral implements CentralStore {
   products = new Map<number, CopyProduct & { sig: string }>()
   prices = new Map<string, CopyPrice & { game_id: number }>()
   runs: { id: number; game_id: number; kind: string; target?: string | null; status?: RunStatus; errors?: SetError[] }[] = []
+  history: HistoryRow[] = []
 
   async upsertGames(rows: ResolvedGame[]) {
     for (const r of rows) {
@@ -164,6 +167,8 @@ class FakeCentral implements CentralStore {
       }
       if (cur) c.updated++
       else c.inserted++
+      // Como el SQL: el historial no guarda filas sin market ni mid.
+      if (p.marketUsd != null || p.midUsd != null) this.history.push({ product_id: prod.id, subtype: p.subtype, price_date: fetchedAt.slice(0, 10), market_usd: p.marketUsd, mid_usd: p.midUsd })
       this.prices.set(key, {
         product_id: prod.id,
         game_id: prod.game_id,
@@ -213,6 +218,11 @@ class FakeCentral implements CentralStore {
       .slice(0, limit)
       .map(({ game_id: _g, ...p }) => p)
   }
+  async exportHistory(ids: number[], since: string | null) {
+    this.historyCalls.push({ ids: [...ids], since })
+    return this.history.filter((h) => ids.includes(h.product_id) && (!since || h.price_date >= since))
+  }
+  historyCalls: { ids: number[]; since: string | null }[] = []
 }
 
 class FakeTenant implements TenantStore {
@@ -224,6 +234,9 @@ class FakeTenant implements TenantStore {
   products = new Map<number, Omit<CopyProduct, 'updated_at'>>()
   prices = new Map<string, Omit<CopyPrice, 'updated_at'>>()
   writes = { products: 0, prices: 0 }
+  /** Cartas (ids del catálogo) que la tienda tiene en inventario. */
+  inventory: number[] = []
+  history = new Map<string, HistoryRow>()
 
   constructor(ref: string, enabled: number[] | null) {
     this.ref = ref
@@ -262,6 +275,12 @@ class FakeTenant implements TenantStore {
   }
   async countProducts(gameId: number) {
     return [...this.products.values()].filter((p) => p.game_id === gameId).length
+  }
+  async historyTargets() {
+    return this.inventory.map((id) => ({ tcg_product_id: id, has_history: [...this.history.values()].some((h) => h.product_id === id) }))
+  }
+  async upsertHistory(rows: HistoryRow[]) {
+    for (const r of rows) this.history.set(`${r.product_id}|${r.subtype}|${r.price_date}`, r)
   }
 }
 
@@ -404,5 +423,39 @@ describe('runSync', () => {
 
   it('rechaza un juego que no está en la lista curada', async () => {
     await expect(runSync(deps([]), { games: ['uno'] })).rejects.toThrow(/Juego desconocido/)
+  })
+
+  it('copia el historial solo de las cartas en inventario: completo para las nuevas, reciente para las demás', async () => {
+    const a = new FakeTenant('tienda-a', [POKEMON])
+    a.inventory = [10] // carta 1 (id central 10)
+    await runSync(deps([a]))
+    expect([...a.history.values()].map((h) => [h.product_id, h.subtype]).sort()).toEqual([
+      [10, 'Holofoil'],
+      [10, 'Normal'],
+    ])
+
+    // Al día siguiente cambia el precio: la carta ya tiene historial → solo lo reciente.
+    provider.updated = new Date('2026-11-07T20:05:00Z')
+    provider.prices[100] = [price(1, 10), price(1, 20, 'Holofoil'), price(2, null)]
+    central.historyCalls = []
+    a.inventory = [10, 20] // y entra la carta 2 al inventario
+    await runSync(deps([a]), { now: () => new Date('2026-11-08T11:00:00Z') })
+    expect(central.historyCalls).toEqual([
+      { ids: [20], since: null },
+      { ids: [10], since: '2026-11-05' },
+    ])
+    expect(a.history.get('10|Normal|2026-11-07')?.market_usd).toBe(10)
+    expect(a.history.size).toBe(3)
+
+    // Idempotente.
+    await copyHistory(central, a, { now: () => new Date('2026-11-08T11:00:00Z') })
+    expect(a.history.size).toBe(3)
+  })
+
+  it('omite el historial (con aviso) si a la tienda le falta la migración', async () => {
+    const a = new FakeTenant('tienda-a', [POKEMON])
+    a.historyTargets = (async () => null) as unknown as FakeTenant['historyTargets']
+    const s = await runSync(deps([a]))
+    expect(s.warnings).toEqual(['tienda-a: le falta la migración del historial de precios; se omite.'])
   })
 })
