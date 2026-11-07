@@ -29,6 +29,8 @@ import { LotPicker } from './LotPicker'
 import { ProductImage } from './ProductImage'
 import { SupplierSelect } from './SupplierSelect'
 import { WebcamCapture } from './WebcamCapture'
+import { SingleProductReference } from './singles/SuggestedPrice'
+import { useAuth } from '../auth/useAuth'
 
 interface Props {
   productId: string
@@ -76,6 +78,7 @@ export function ProductEditModal({ productId, suppliers, onCancel, onSaved, onCh
   const [done, setDone] = useState<string | null>(null)
   const { products } = useInventory()
   const settings = useSettings()
+  const { profile } = useAuth()
   const drinks = comboDrinks(products, settings.comboDrinksCategory).filter((p) => p.id !== productId)
 
   useEffect(() => {
@@ -233,6 +236,18 @@ export function ProductEditModal({ productId, suppliers, onCancel, onSaved, onCh
                 <label className={label} htmlFor="pe-cost">Costo ($)</label>
                 <input id="pe-cost" className={`${input} tabular-nums`} value={fields.cost} onChange={set('cost')} inputMode="decimal" autoComplete="off" />
               </div>
+              {product?.tcg_product_id != null && (
+                <div className="md:col-span-2">
+                  <SingleProductReference
+                    product={product}
+                    isAdmin={profile?.role === 'admin'}
+                    onApplied={(price) => {
+                      setFields((f) => (f ? { ...f, price: moneyText(price) } : f))
+                      applied({ ...product, price }, `Se aplicó el precio sugerido: ${formatMoney(price)}.`)
+                    }}
+                  />
+                </div>
+              )}
               <div>
                 <label className={label} htmlFor="pe-category">Categoría</label>
                 <CategorySelect id="pe-category" value={fields.category} onChange={(category) => setFields((f) => (f ? { ...f, category } : f))} />

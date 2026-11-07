@@ -10,6 +10,7 @@
  * Solo se carga cuando VITE_DEMO=1 (ver supabase.ts); no va en el build normal.
  */
 import type { Product, UserRole } from '../types'
+import { demoSingles } from './demoSingles'
 
 type Row = Record<string, unknown>
 
@@ -90,6 +91,9 @@ const products: Product[] = Array.from({ length: 24 }, (_, i) => {
     updated_at: ago(100),
   }
 })
+
+// Singles de muestra (cartas reales del catálogo).
+const singles = demoSingles(products)
 
 const CUSTOMER_NAMES = ['Ana Martínez', 'Luis Hernández García', 'Sofía Ramírez', 'Diego Torres', 'Valentina Cruz Domínguez de la Fuente', 'Carlos Pérez']
 const GAMES = [['Pokémon', 'Magic'], ['Yu-Gi-Oh!'], [], ['One Piece', 'Lorcana', 'Magic', 'Pokémon'], ['Magic'], []]
@@ -214,6 +218,7 @@ const transfers: Row[] = Array.from({ length: 4 }, (_, i) => ({
 }))
 
 const tables: Record<string, Row[]> = {
+  ...singles.tables,
   products: products as unknown as Row[],
   product_costs: products.map((p) => ({ product_id: p.id, cost: p.cost })),
   profiles: [
@@ -384,6 +389,7 @@ function demoMovement(p: Product, location: string, delta: number, type: string,
 const initialLoadOpen = () => tables.app_settings[0]?.initial_load_open !== false
 
 const rpcs: Record<string, (args: Row) => unknown> = {
+  ...singles.rpcs,
   register_scan: (a) => {
     const p = products.find((x) => x.barcode === String(a.p_barcode).trim())
     if (!p) return { status: 'not_found', barcode: a.p_barcode }
@@ -597,7 +603,8 @@ function ordered(rows: Row[], order: string | null) {
   if (!order) return rows
   const [col, dir] = order.split(',')[0].split('.')
   const sign = dir === 'desc' ? -1 : 1
-  return [...rows].sort((a, b) => (String(a[col] ?? '') < String(b[col] ?? '') ? -sign : String(a[col] ?? '') > String(b[col] ?? '') ? sign : 0))
+  const key = (v: unknown) => (typeof v === 'number' ? v : String(v ?? ''))
+  return [...rows].sort((a, b) => (key(a[col]) < key(b[col]) ? -sign : key(a[col]) > key(b[col]) ? sign : 0))
 }
 
 function json(body: unknown, status = 200) {

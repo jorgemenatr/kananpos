@@ -1,10 +1,14 @@
 import { useMemo, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useAuth } from '../../auth/useAuth'
 import { normalizeBarcode } from '../../lib/barcode'
+import { usePricingRules, useSingleRefs } from '../../lib/singles'
+import type { CardCondition } from '../../lib/pricing'
 import { formatInt, formatMoney } from '../../lib/format'
 import type { CachedProduct } from '../../store/inventoryStore'
 import { Icon } from '../Icon'
 import { ProductImage } from '../ProductImage'
 import { LanguageTag, languageSearchText } from '../LanguageTag'
+import { SuggestedPriceLine, suggestionFor } from '../singles/SuggestedPrice'
 
 interface Props {
   inputRef: RefObject<HTMLInputElement | null>
@@ -65,6 +69,25 @@ export function ProductPicker({
       .sort((a, b) => Number(available(b) > 0) - Number(available(a) > 0) || a.name.localeCompare(b.name, 'es-MX'))
       .slice(0, MAX_RESULTS)
   }, [query, products, available])
+
+  // Singles en la lista: precio de referencia (de nuestra base, nunca del proveedor).
+  const { profile } = useAuth()
+  const rules = usePricingRules()
+  const singleIds = useMemo(() => results.filter((p) => p.tcg_product_id).map((p) => p.id), [results])
+  const refs = useSingleRefs(singleIds)
+  const refLine = (p: CachedProduct, className = '') => {
+    const ref = refs.get(p.id)
+    if (!ref) return null
+    return (
+      <SuggestedPriceLine
+        inline
+        suggestion={suggestionFor(ref, p.card_condition as CardCondition, rules)}
+        asOf={ref.prices_as_of}
+        isAdmin={profile?.role === 'admin'}
+        className={className}
+      />
+    )
+  }
 
   function pick(p: CachedProduct) {
     onPick(p)
@@ -163,10 +186,12 @@ export function ProductPicker({
                       {showPrice && <span className="font-semibold text-ink tabular-nums">{formatMoney(p.price)} · </span>}
                       <span className={stockClass}>{stockText}</span>
                     </p>
+                    {showPrice && <p className="md:hidden">{refLine(p)}</p>}
                   </div>
                   <div className="shrink-0 text-right max-md:hidden">
                     {showPrice && <p className="text-label tabular-nums">{formatMoney(p.price)}</p>}
                     <p className={`text-caption ${stockClass}`}>{stockText}</p>
+                    {showPrice && <p>{refLine(p)}</p>}
                   </div>
                 </button>
               </li>

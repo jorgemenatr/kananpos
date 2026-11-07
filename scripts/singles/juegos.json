@@ -1,0 +1,16 @@
+{
+  "_comentario": "Juegos soportados para singles. slug = nuestra clave (la misma de src/lib/catalogSources.json cuando existe). proveedor = nombre de la categoría en TCGplayer (campo name o displayName de https://tcgcsv.com/tcgplayer/categories): el categoryId se busca con eso en cada sincronización, nunca se escribe a mano. Para agregar un juego, súmalo aquí.",
+  "juegos": [
+    { "slug": "pokemon", "nombre": "Pokémon", "proveedor": "Pokemon" },
+    { "slug": "pokemon-japan", "nombre": "Pokémon Japón", "proveedor": "Pokemon Japan" },
+    { "slug": "magic", "nombre": "Magic: The Gathering", "proveedor": "Magic" },
+    { "slug": "yugioh", "nombre": "Yu-Gi-Oh!", "proveedor": "YuGiOh" },
+    { "slug": "one-piece", "nombre": "One Piece", "proveedor": "One Piece Card Game" },
+    { "slug": "lorcana", "nombre": "Disney Lorcana", "proveedor": "Lorcana TCG" },
+    { "slug": "digimon", "nombre": "Digimon", "proveedor": "Digimon Card Game" },
+    { "slug": "dragon-ball-fusion-world", "nombre": "Dragon Ball Super Fusion World", "proveedor": "Dragon Ball Super Fusion World" },
+    { "slug": "star-wars-unlimited", "nombre": "Star Wars Unlimited", "proveedor": "Star Wars Unlimited" },
+    { "slug": "flesh-and-blood", "nombre": "Flesh and Blood", "proveedor": "Flesh & Blood TCG" },
+    { "slug": "riftbound", "nombre": "Riftbound", "proveedor": "Riftbound League of Legends Trading Card Game" }
+  ]
+}

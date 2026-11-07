@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Icon } from '../components/Icon'
 import { MoreMenu } from '../components/MoreMenu'
+import { SinglesConfig } from '../components/singles/SinglesConfig'
 import { getCatalogStatus, type CatalogStatus } from '../lib/catalog'
 import {
   CATALOG_SOURCES,
@@ -24,7 +25,7 @@ const errorText = (e: unknown) =>
 
 type Editing = { category: CategoryNode | null; parentId: string | null }
 
-/** Configuración del negocio (solo administradores): nombre, categorías y catálogo TCG. */
+/** Configuración del negocio (solo administradores): nombre, categorías, catálogo TCG y singles. */
 export function ConfigPage() {
   const { tree } = useCategories()
   const { products } = useInventory()
@@ -151,6 +152,8 @@ export function ConfigPage() {
       </section>
 
       <CatalogCard linked={[...linked]} />
+
+      <SinglesConfig />
 
       {editing && (
         <CategoryModal

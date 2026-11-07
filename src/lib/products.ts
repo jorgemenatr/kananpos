@@ -21,7 +21,7 @@ export interface ProductPatch {
 // Sin cost: esa columna solo la lee un admin, con la vista product_costs.
 const COLUMNS =
   'id, barcode, name, category, supplier, supplier_id, price, quantity, warehouse_quantity, image_url, is_internal_code, track_stock, ' +
-  'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, description, catalog_product_id, language, created_by, created_at, updated_at'
+  'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, description, catalog_product_id, language, tcg_product_id, tcg_subtype, card_condition, created_by, created_at, updated_at'
 
 const num = (p: Product): Product => ({
   ...p,

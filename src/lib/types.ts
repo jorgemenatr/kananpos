@@ -67,6 +67,12 @@ export interface Product {
   catalog_product_id: number | null
   /** Idioma del producto (inglés, español…); null = no aplica (comida, accesorios). */
   language: ProductLanguage | null
+  /** Single: carta del catálogo de singles (tcg_products.id); null = no es single. */
+  tcg_product_id?: number | null
+  /** Single: subtipo de precio (Normal, Foil, Holofoil…). */
+  tcg_subtype?: string | null
+  /** Single: estado de la carta (NM, LP, MP, HP, DMG). */
+  card_condition?: 'NM' | 'LP' | 'MP' | 'HP' | 'DMG' | null
   created_by: string | null
   created_at: string
   updated_at: string

@@ -63,6 +63,9 @@ Las migraciones están en `supabase/migrations/` y deben aplicarse **en orden**:
 | `20261031000300_combos_grupo_bebidas.sql` | Combos con grupo de bebidas: `products.is_combo` y `app_settings.combo_drinks_category` (la categoría cuyos productos son las bebidas a elegir). `checkout_ticket` valida la bebida contra ese grupo; `product_combo_options` deja de usarse. Compatible con la app anterior |
 | `20261102000100_idioma_producto.sql` | Idioma del producto (`products.language`: inglés, español, japonés, chino o sin idioma) y `create_product` con `p_language`. Etiqueta los productos actuales ("ESPAÑOL"/"Japones" en el nombre → ese idioma, y quita la palabra del nombre; el resto de Pokémon → inglés). Aplicar **antes** de publicar la app nueva |
 | `20261106000200_desactivar_usuarios.sql` | **Desactivar usuarios:** `user_access_status()` (estado de acceso, solo admin), `revoke_user_sessions()` (solo `service_role`), `check_request()` como `pgrst.db_pre_request` (la API rechaza al instante a un usuario desactivado) y `keep_one_admin` exige un admin **activo**. Se puede aplicar antes o después de publicar la app |
+| `20261107000100_singles_catalogo.sql` | **Singles:** copia local del catálogo de singles (`tcg_games`, `tcg_sets`, `tcg_products`, `tcg_prices`) y juegos activos de la tienda (`store_tcg_settings`). La llena el job [Sincronizar singles](scripts/singles/README.md); la app no lee `tcg_prices` directo. Se puede aplicar antes o después de publicar |
+| `20261108000100_singles_configuracion.sql` | **Singles, configuración:** reglas de precio de la tienda (`store_pricing_rules`: tipo de cambio de venta, multiplicador, redondeo, % por estado, precio mínimo, % para revisar), historial del tipo de cambio (`store_fx_rate_history`, vista `fx_rate_history`), `set_tcg_game_enabled` y búsqueda `search_singles` (trigramas, solo juegos activos). Aplicar **antes** de publicar la app nueva |
+| `20261108000200_singles_inventario.sql` | **Singles, inventario:** variantes en `products` (`tcg_product_id`, `tcg_subtype`, `card_condition` + idioma), `add_single_stock` (alta como compra → lote FIFO), `single_variants`, `singles_reference` (referencia y costo FIFO), `apply_single_prices` + `product_price_changes`. Aplicar **antes** de publicar la app nueva |
 
 **Opción A: SQL Editor (lo más sencillo).** En el dashboard ve a **SQL Editor → New query**,
 pega el contenido de cada archivo en orden y presiona **Run**.
@@ -103,6 +106,7 @@ necesita la `service_role` key y esa nunca puede ir en el navegador.
 | --- | --- |
 | `crear-usuario` | Crea la cuenta (correo, nombre, rol y contraseña temporal) |
 | `desactivar-usuario` | Bloquea o devuelve el acceso de una cuenta y cierra sus sesiones |
+| `activar-juego` | Pide la carga inicial del catálogo de singles de un juego recién activado (necesita el secret `GITHUB_DISPATCH_TOKEN`, ver [Catálogo de singles](#catálogo-de-singles)) |
 
 **Opción A: dashboard.** Por cada función: **Edge Functions → Deploy a new function → Via
 Editor**, ponle el nombre de la función, pega el contenido de
@@ -119,7 +123,7 @@ npx supabase functions deploy crear-usuario
 npx supabase functions deploy desactivar-usuario
 ```
 
-Con varios clientes: `npm run clientes -- funciones` despliega las dos en todos.
+Con varios clientes: `npm run clientes -- funciones` las despliega en todos.
 
 No hay que configurar secretos: Supabase le da a la función `SUPABASE_URL`,
 `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`.
@@ -456,6 +460,49 @@ hace con Ultra Pro y Pokémon.
 
 ---
 
+## Catálogo de singles
+
+Cartas sueltas por juego, set y carta, con precio de referencia en USD, para las tiendas
+que venden singles. A diferencia del catálogo de sellado, vive en un **proyecto central**
+(`kananpos-catalogo`, migraciones en `supabase/catalogo/migrations/`). Se descarga de
+TCGCSV **una vez al día** (workflow **Sincronizar singles**, 05:00 de CDMX) y a cada tienda se
+copian solo los juegos que tiene activos. Cómo funciona, cómo correrlo a mano y cómo
+cambiar de proveedor: [`scripts/singles/README.md`](scripts/singles/README.md).
+
+En la app (todo lo de admin, salvo la referencia en el mostrador):
+
+- **Configuración → Singles y juegos.** Juegos (switch, cartas y fecha de actualización).
+  Al activar uno que no está copiado se pide su carga en segundo plano (Edge Function
+  `activar-juego` → workflow); al desactivarlo deja de aparecer en búsquedas y altas, pero
+  su inventario no se borra (si hay piezas, avisa antes). **Reglas de precio:** tipo de
+  cambio de venta (MXN por 1 USD, lo define la tienda; con fecha, usuario e historial),
+  multiplicador, redondeo, % por estado (NM 100, LP 85, MP 70, HP 50, DMG 30), precio
+  mínimo y % para "Revisar precios".
+- **Inventario → Alta de singles** (`/singles`). Buscador por nombre, set o número (solo
+  juegos activos, con imagen). Se elige tipo de impresión, estado, idioma, cantidad, costo
+  y proveedor. Cada variante (carta + tipo + estado + idioma) es un producto con código
+  interno y su propio precio; las piezas entran **como una compra** (lote con proveedor y
+  costo, FIFO, tienda o bodega). No hay inventario paralelo.
+- **Precio sugerido** = `market_usd × tipo de cambio × multiplicador × % del estado`, con
+  redondeo (al más cercano) y precio mínimo; sin `market_usd` usa `mid_usd`; sin ninguno,
+  "sin precio de referencia"; sin tipo de cambio, no hay sugerido. Una sola función:
+  `src/lib/pricing.ts`. Se ve en la ficha del producto, en el mostrador y en el alta
+  ("Ref. $185 · actualizado hoy"; el desglose al pasar el cursor o tocarlo). **El precio
+  de venta nunca cambia solo:** botón "Aplicar precio sugerido" con confirmación.
+- **Inventario → Revisar precios** (`/revisar-precios`). Singles cuyo precio difiere del
+  sugerido más del %. Se aplican uno por uno o los seleccionados (queda en
+  `product_price_changes`), con el margen contra el costo FIFO.
+- La app no lee los precios de mercado en bloque: solo por funciones con límite (búsqueda,
+  ficha, inventario propio). La exportación del inventario no lleva precio de mercado.
+
+Para la carga inicial al activar un juego, cada tienda necesita el secret
+`GITHUB_DISPATCH_TOKEN` en sus Edge Functions: un token **fino** de GitHub con "Actions:
+read and write" solo en este repositorio. Ponlo en `.env.clientes` y corre
+`npm run clientes -- funciones`. Sin él, el juego se descarga en la siguiente
+actualización automática (05:00).
+
+---
+
 ## El día del escaneo
 
 ### Configurar el lector
@@ -736,10 +783,12 @@ Cada cliente puede tener créditos (1 crédito = $1) para pagar productos en la 
 ## Estructura
 
 ```
-supabase/migrations/     Migraciones SQL (esquema, RLS, RPC, storage, catálogo TCG)
+supabase/migrations/     Migraciones SQL de cada tienda (esquema, RLS, RPC, storage, catálogo TCG)
+supabase/catalogo/       Migraciones del proyecto central del catálogo de singles
 scripts/                 Importador del catálogo TCG (npm run catalogo) y administración
                          de clientes (npm run clientes)
-.github/workflows/       Importación semanal del catálogo y actualización de clientes
+scripts/singles/         Catálogo de singles: proveedores de precios y sincronización (npm run singles)
+.github/workflows/       Importación semanal del catálogo, singles diario y actualización de clientes
 src/
   lib/supabase.ts        Cliente único de Supabase + detección de errores de red/sesión
   auth/                  AuthProvider, useAuth, ProtectedRoute (listo para roles)
