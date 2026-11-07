@@ -63,6 +63,7 @@ Las migraciones están en `supabase/migrations/` y deben aplicarse **en orden**:
 | `20261031000300_combos_grupo_bebidas.sql` | Combos con grupo de bebidas: `products.is_combo` y `app_settings.combo_drinks_category` (la categoría cuyos productos son las bebidas a elegir). `checkout_ticket` valida la bebida contra ese grupo; `product_combo_options` deja de usarse. Compatible con la app anterior |
 | `20261102000100_idioma_producto.sql` | Idioma del producto (`products.language`: inglés, español, japonés, chino o sin idioma) y `create_product` con `p_language`. Etiqueta los productos actuales ("ESPAÑOL"/"Japones" en el nombre → ese idioma, y quita la palabra del nombre; el resto de Pokémon → inglés). Aplicar **antes** de publicar la app nueva |
 | `20261106000200_desactivar_usuarios.sql` | **Desactivar usuarios:** `user_access_status()` (estado de acceso, solo admin), `revoke_user_sessions()` (solo `service_role`), `check_request()` como `pgrst.db_pre_request` (la API rechaza al instante a un usuario desactivado) y `keep_one_admin` exige un admin **activo**. Se puede aplicar antes o después de publicar la app |
+| `20261107000100_singles_catalogo.sql` | **Singles:** copia local del catálogo de singles (`tcg_games`, `tcg_sets`, `tcg_products`, `tcg_prices`) y juegos activos de la tienda (`store_tcg_settings`). La llena el job [Sincronizar singles](scripts/singles/README.md); la app no lee `tcg_prices` directo. Se puede aplicar antes o después de publicar |
 
 **Opción A: SQL Editor (lo más sencillo).** En el dashboard ve a **SQL Editor → New query**,
 pega el contenido de cada archivo en orden y presiona **Run**.
@@ -456,6 +457,17 @@ hace con Ultra Pro y Pokémon.
 
 ---
 
+## Catálogo de singles
+
+Cartas sueltas por juego, set y carta, con precio de referencia en USD, para las tiendas
+que venden singles. A diferencia del catálogo de sellado, vive en un **proyecto central**
+(`kananpos-catalogo`, migraciones en `supabase/catalogo/migrations/`). Se descarga de
+TCGCSV **una vez al día** (workflow **Sincronizar singles**, 21:30 UTC) y a cada tienda se
+copian solo los juegos que tiene activos. Cómo funciona, cómo correrlo a mano y cómo
+cambiar de proveedor: [`scripts/singles/README.md`](scripts/singles/README.md).
+
+---
+
 ## El día del escaneo
 
 ### Configurar el lector
@@ -736,10 +748,12 @@ Cada cliente puede tener créditos (1 crédito = $1) para pagar productos en la 
 ## Estructura
 
 ```
-supabase/migrations/     Migraciones SQL (esquema, RLS, RPC, storage, catálogo TCG)
+supabase/migrations/     Migraciones SQL de cada tienda (esquema, RLS, RPC, storage, catálogo TCG)
+supabase/catalogo/       Migraciones del proyecto central del catálogo de singles
 scripts/                 Importador del catálogo TCG (npm run catalogo) y administración
                          de clientes (npm run clientes)
-.github/workflows/       Importación semanal del catálogo y actualización de clientes
+scripts/singles/         Catálogo de singles: proveedores de precios y sincronización (npm run singles)
+.github/workflows/       Importación semanal del catálogo, singles diario y actualización de clientes
 src/
   lib/supabase.ts        Cliente único de Supabase + detección de errores de red/sesión
   auth/                  AuthProvider, useAuth, ProtectedRoute (listo para roles)

@@ -1,0 +1,450 @@
+{
+ "_comentario": "Productos reales de tcgcsv.com (noviembre 2026), recortados a los campos que usa la regla is_single.",
+ "productos": [
+  {
+   "categoryId": 3,
+   "productId": 696613,
+   "name": "30th Celebration Booster Pack",
+   "cleanName": "30th Celebration Booster Pack",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/696613_200w.jpg",
+   "groupId": 24722,
+   "url": "https://www.tcgplayer.com/product/696613/pokemon-me-30th-celebration-30th-celebration-booster-pack",
+   "modifiedOn": "2026-09-16T04:10:15.28",
+   "extendedData": []
+  },
+  {
+   "categoryId": 3,
+   "productId": 696830,
+   "name": "Victini",
+   "cleanName": "Victini",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/696830_200w.jpg",
+   "groupId": 24722,
+   "url": "https://www.tcgplayer.com/product/696830/pokemon-me-30th-celebration-victini",
+   "modifiedOn": "2026-09-16T04:10:15.28",
+   "extendedData": [
+    {
+     "name": "Number",
+     "displayName": "Card Number",
+     "value": "013/128"
+    },
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Common"
+    },
+    {
+     "name": "Card Type",
+     "displayName": "Card Type",
+     "value": "Fire"
+    }
+   ]
+  },
+  {
+   "categoryId": 3,
+   "productId": 716631,
+   "name": "Code Card - 30th Celebration Elite Trainer Box",
+   "cleanName": "Code Card 30th Celebration Elite Trainer Box",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/716631_200w.jpg",
+   "groupId": 24722,
+   "url": "https://www.tcgplayer.com/product/716631/pokemon-me-30th-celebration-code-card-30th-celebration-elite-trainer-box",
+   "modifiedOn": "2026-09-16T18:37:26.253",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Code Card"
+    }
+   ]
+  },
+  {
+   "categoryId": 3,
+   "productId": 129890,
+   "name": "Guardians Rising Elite Trainer Box",
+   "cleanName": "Guardians Rising Elite Trainer Box",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/129890_200w.jpg",
+   "groupId": 1919,
+   "url": "https://www.tcgplayer.com/product/129890/pokemon-sm-guardians-rising-guardians-rising-elite-trainer-box",
+   "modifiedOn": "2024-02-13T21:45:40.337",
+   "extendedData": []
+  },
+  {
+   "categoryId": 85,
+   "productId": 716945,
+   "name": "Basic Fighting Energy",
+   "cleanName": "Basic Fighting Energy",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/716945_200w.jpg",
+   "groupId": 24721,
+   "url": "https://www.tcgplayer.com/product/716945/pokemon-japan-m6a-mega-expansion-30th-celebration-basic-fighting-energy",
+   "modifiedOn": "2026-09-22T14:11:24.16",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Futuristic Rare"
+    },
+    {
+     "name": "Number",
+     "displayName": "Number",
+     "value": "FIG"
+    }
+   ]
+  },
+  {
+   "categoryId": 85,
+   "productId": 718620,
+   "name": "MEGA Expansion 30th Celebration Booster Box",
+   "cleanName": "MEGA Expansion 30th Celebration Booster Box",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/718620_200w.jpg",
+   "groupId": 24721,
+   "url": "https://www.tcgplayer.com/product/718620/pokemon-japan-m6a-mega-expansion-30th-celebration-mega-expansion-30th-celebration-booster-box",
+   "modifiedOn": "2026-09-18T17:53:17.847",
+   "extendedData": []
+  },
+  {
+   "categoryId": 85,
+   "productId": 716763,
+   "name": "Brock's Scouting",
+   "cleanName": "Brocks Scouting",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/716763_200w.jpg",
+   "groupId": 24856,
+   "url": "https://www.tcgplayer.com/product/716763/pokemon-japan-mf-30th-celebration-premium-deck-set-espeon-and-umbreon-brocks-scouting",
+   "modifiedOn": "2026-09-16T13:19:14.17",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "None"
+    },
+    {
+     "name": "Number",
+     "displayName": "Number",
+     "value": "038/040"
+    },
+    {
+     "name": "CardType",
+     "displayName": "Card Type",
+     "value": "Trainer - Supporter"
+    }
+   ]
+  },
+  {
+   "categoryId": 1,
+   "productId": 719969,
+   "name": "Citizen // The Monarch Double-Sided Token",
+   "cleanName": "Citizen The Monarch Double Sided Token",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/719969_200w.jpg",
+   "groupId": 24689,
+   "url": "https://www.tcgplayer.com/product/719969/magic-commander-reality-fracture-citizen-the-monarch-double-sided-token",
+   "modifiedOn": "2026-10-15T19:37:23.263",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "T"
+    },
+    {
+     "name": "Number",
+     "displayName": "#",
+     "value": "11 // 17"
+    }
+   ]
+  },
+  {
+   "categoryId": 1,
+   "productId": 202300,
+   "name": "Theros Beyond Death - Bundle",
+   "cleanName": "Theros Beyond Death Bundle",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/202300_200w.jpg",
+   "groupId": 2568,
+   "url": "https://www.tcgplayer.com/product/202300/magic-theros-beyond-death-theros-beyond-death-bundle",
+   "modifiedOn": "2019-12-17T20:42:01.123",
+   "extendedData": []
+  },
+  {
+   "categoryId": 1,
+   "productId": 206459,
+   "name": "Klothys, God of Destiny (Showcase)",
+   "cleanName": "Klothys God of Destiny Showcase",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/206459_200w.jpg",
+   "groupId": 2568,
+   "url": "https://www.tcgplayer.com/product/206459/magic-theros-beyond-death-klothys-god-of-destiny-showcase",
+   "modifiedOn": "2026-06-25T04:07:27.763",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "M"
+    },
+    {
+     "name": "Number",
+     "displayName": "#",
+     "value": "268"
+    }
+   ]
+  },
+  {
+   "categoryId": 2,
+   "productId": 719829,
+   "name": "Token: Joey and Red-Eyes Black Dragon",
+   "cleanName": "Token Joey and Red Eyes Black Dragon",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/719829_200w.jpg",
+   "groupId": 24815,
+   "url": "https://www.tcgplayer.com/product/719829/yugioh-beyond-the-brave-token-joey-and-red-eyes-black-dragon",
+   "modifiedOn": "2026-10-09T04:10:22.04",
+   "extendedData": [
+    {
+     "name": "Number",
+     "displayName": "Number",
+     "value": "TKN5-EN052"
+    },
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Super Rare"
+    },
+    {
+     "name": "Card Type",
+     "displayName": "Card Type",
+     "value": "Token"
+    }
+   ]
+  },
+  {
+   "categoryId": 2,
+   "productId": 715292,
+   "name": "Magnificent Monsters Booster Pack",
+   "cleanName": "Magnificent Monsters Booster Pack",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/715292_200w.jpg",
+   "groupId": 24707,
+   "url": "https://www.tcgplayer.com/product/715292/yugioh-magnificent-monsters-magnificent-monsters-booster-pack",
+   "modifiedOn": "2026-09-08T21:27:57.53",
+   "extendedData": []
+  },
+  {
+   "categoryId": 68,
+   "productId": 711385,
+   "name": "Extra Booster: One Piece Heroines Edition Vol.2 - Booster Box",
+   "cleanName": "Extra Booster One Piece Heroines Edition Vol2 Booster Box",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711385_200w.jpg",
+   "groupId": 24820,
+   "url": "https://www.tcgplayer.com/product/711385/one-piece-card-game-extra-booster-one-piece-heroines-edition-vol-2-extra-booster-one-piece-heroines-edition-vol2-booster-box",
+   "modifiedOn": "2026-10-30T04:10:15.84",
+   "extendedData": []
+  },
+  {
+   "categoryId": 68,
+   "productId": 728077,
+   "name": "DON!! Card",
+   "cleanName": "DON Card",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/728077_200w.jpg",
+   "groupId": 24820,
+   "url": "https://www.tcgplayer.com/product/728077/one-piece-card-game-extra-booster-one-piece-heroines-edition-vol-2-don-card",
+   "modifiedOn": "2026-10-30T14:02:04.877",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "DON!!"
+    },
+    {
+     "name": "CardType",
+     "displayName": "Card Type",
+     "value": "DON!!"
+    }
+   ]
+  },
+  {
+   "categoryId": 71,
+   "productId": 706241,
+   "name": "Disney Lorcana: Hyperia City Booster Pack",
+   "cleanName": "Disney Lorcana Hyperia City Booster Pack",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/706241_200w.jpg",
+   "groupId": 24740,
+   "url": "https://www.tcgplayer.com/product/706241/lorcana-tcg-hyperia-city-disney-lorcana-hyperia-city-booster-pack",
+   "modifiedOn": "2026-10-23T04:10:13.783",
+   "extendedData": []
+  },
+  {
+   "categoryId": 71,
+   "productId": 722484,
+   "name": "Jukebox",
+   "cleanName": "Jukebox",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/722484_200w.jpg",
+   "groupId": 24740,
+   "url": "https://www.tcgplayer.com/product/722484/lorcana-tcg-hyperia-city-jukebox",
+   "modifiedOn": "2026-10-16T04:10:17.08",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Rare"
+    },
+    {
+     "name": "Number",
+     "displayName": "Number",
+     "value": "134/204"
+    },
+    {
+     "name": "CardType",
+     "displayName": "Card Type",
+     "value": "Item"
+    }
+   ]
+  },
+  {
+   "categoryId": 71,
+   "productId": 722932,
+   "name": "Ink Drop",
+   "cleanName": "Ink Drop",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/722932_200w.jpg",
+   "groupId": 24740,
+   "url": "https://www.tcgplayer.com/product/722932/lorcana-tcg-hyperia-city-ink-drop",
+   "modifiedOn": "2026-10-16T04:10:17.08",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "None"
+    }
+   ]
+  },
+  {
+   "categoryId": 71,
+   "productId": 723665,
+   "name": "Hyperia City Puzzle Insert (Set of 9)",
+   "cleanName": "Hyperia City Puzzle Insert Set of 9",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/723665_200w.jpg",
+   "groupId": 24740,
+   "url": "https://www.tcgplayer.com/product/723665/lorcana-tcg-hyperia-city-hyperia-city-puzzle-insert-set-of-9",
+   "modifiedOn": "2026-10-16T16:00:31.7",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "None"
+    }
+   ]
+  },
+  {
+   "categoryId": 79,
+   "productId": 710961,
+   "name": "Homeworlds - Booster Display",
+   "cleanName": "Homeworlds Booster Display",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/710961_200w.jpg",
+   "groupId": 24812,
+   "url": "https://www.tcgplayer.com/product/710961/star-wars-unlimited-homeworlds-homeworlds-booster-display",
+   "modifiedOn": "2026-10-09T04:10:20.147",
+   "extendedData": []
+  },
+  {
+   "categoryId": 79,
+   "productId": 720105,
+   "name": "Howler Pack",
+   "cleanName": "Howler Pack",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/720105_200w.jpg",
+   "groupId": 24812,
+   "url": "https://www.tcgplayer.com/product/720105/star-wars-unlimited-homeworlds-howler-pack",
+   "modifiedOn": "2026-10-09T04:10:20.147",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Common"
+    },
+    {
+     "name": "Number",
+     "displayName": "Number",
+     "value": "144/272"
+    },
+    {
+     "name": "CardType",
+     "displayName": "Card Type",
+     "value": "Unit"
+    }
+   ]
+  },
+  {
+   "categoryId": 80,
+   "productId": 615597,
+   "name": "Code Card - New Adventure Booster (FB05)",
+   "cleanName": "Code Card New Adventure Booster FB05",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/615597_200w.jpg",
+   "groupId": 23928,
+   "url": "https://www.tcgplayer.com/product/615597/dragon-ball-super-fusion-world-new-adventure-code-card-new-adventure-booster-fb05",
+   "modifiedOn": "2025-02-14T14:42:31.177",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Code Card"
+    }
+   ]
+  },
+  {
+   "categoryId": 62,
+   "productId": 719683,
+   "name": "GEM Pack 6 Booster Pack",
+   "cleanName": "GEM Pack 6 Booster Pack",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/719683_200w.jpg",
+   "groupId": 24774,
+   "url": "https://www.tcgplayer.com/product/719683/flesh-and-blood-tcg-gem-pack-6-gem-pack-6-booster-pack",
+   "modifiedOn": "2026-09-25T12:51:26.253",
+   "extendedData": []
+  },
+  {
+   "categoryId": 89,
+   "productId": 711362,
+   "name": "Radiance - Booster Pack",
+   "cleanName": "Radiance Booster Pack",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/711362_200w.jpg",
+   "groupId": 24819,
+   "url": "https://www.tcgplayer.com/product/711362/riftbound-league-of-legends-trading-card-game-radiance-radiance-booster-pack",
+   "modifiedOn": "2026-10-27T14:19:55.52",
+   "extendedData": []
+  },
+  {
+   "categoryId": 89,
+   "productId": 722319,
+   "name": "Mordekaiser, Dominating (Alternate Art)",
+   "cleanName": "Mordekaiser Dominating Alternate Art",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/722319_200w.jpg",
+   "groupId": 24819,
+   "url": "https://www.tcgplayer.com/product/722319/riftbound-league-of-legends-trading-card-game-radiance-mordekaiser-dominating-alternate-art",
+   "modifiedOn": "2026-10-23T04:10:19.5",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "Showcase"
+    },
+    {
+     "name": "Number",
+     "displayName": "Number",
+     "value": "137a/167"
+    },
+    {
+     "name": "Card Type",
+     "displayName": "Card Type",
+     "value": "Champion Unit"
+    }
+   ]
+  },
+  {
+   "categoryId": 62,
+   "productId": 723384,
+   "name": "Viserai, the Forsaken // Viserai, Usurper Double Sided Art Card (Top Left)",
+   "cleanName": "Viserai the Forsaken Viserai Usurper Double Sided Art Card Top Left",
+   "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/723384_200w.jpg",
+   "groupId": 24774,
+   "url": "https://www.tcgplayer.com/product/723384/flesh-and-blood-tcg-gem-pack-6-viserai-the-forsaken-viserai-usurper-double-sided-art-card-top-left",
+   "modifiedOn": "2026-10-14T13:47:07.207",
+   "extendedData": [
+    {
+     "name": "Rarity",
+     "displayName": "Rarity",
+     "value": "None"
+    }
+   ]
+  }
+ ]
+}

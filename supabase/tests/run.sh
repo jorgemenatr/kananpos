@@ -67,6 +67,18 @@ $P -d ${DB}_users -f supabase/tests/00_supabase_stub.sql
 for f in supabase/migrations/*.sql; do $P -d ${DB}_users -f "$f"; done
 $P -d ${DB}_users -f supabase/tests/usuarios_desactivados_test.sql
 
+# Singles: copia local del catálogo en la tienda (permisos).
+$P -d postgres -c "drop database if exists ${DB}_singles" -c "create database ${DB}_singles"
+$P -d ${DB}_singles -f supabase/tests/00_supabase_stub.sql
+for f in supabase/migrations/*.sql; do $P -d ${DB}_singles -f "$f"; done
+$P -d ${DB}_singles -f supabase/tests/singles_catalogo_test.sql
+
+# Catálogo CENTRAL de singles (otro proyecto: solo sus migraciones).
+$P -d postgres -c "drop database if exists ${DB}_central" -c "create database ${DB}_central"
+$P -d ${DB}_central -f supabase/tests/00_supabase_stub.sql
+for f in supabase/catalogo/migrations/*.sql; do $P -d ${DB}_central -f "$f"; done
+$P -d ${DB}_central -f supabase/tests/catalogo_central_test.sql
+
 # ---------- 10. Concurrencia ----------
 # Dos ventas al mismo tiempo de un producto con 5 en tienda (3 + 3 piezas):
 # solo una puede pasar. Y un traspaso tienda → bodega al mismo tiempo que una
