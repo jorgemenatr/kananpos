@@ -69,7 +69,11 @@ function flushBatch() {
   }
 }
 
+/** Imagen externa (la de una carta del catálogo de singles): se usa tal cual. */
+export const isExternalImage = (path: string) => /^https:\/\//i.test(path)
+
 export function getSignedImageUrl(path: string): Promise<string | null> {
+  if (isExternalImage(path)) return Promise.resolve(path)
   const cached = signedCache.get(path)
   if (cached && cached.expires > Date.now() + 60_000) return Promise.resolve(cached.url)
   const inFlight = pending.get(path)
@@ -86,8 +90,10 @@ export function getSignedImageUrl(path: string): Promise<string | null> {
 export async function getSignedUrlsForExport(paths: string[], ttlSeconds = 7 * 24 * 60 * 60) {
   const result = new Map<string, string>()
   const unique = [...new Set(paths.filter(Boolean))]
-  for (let i = 0; i < unique.length; i += 500) {
-    const chunk = unique.slice(i, i + 500)
+  for (const p of unique.filter(isExternalImage)) result.set(p, p)
+  const own = unique.filter((p) => !isExternalImage(p))
+  for (let i = 0; i < own.length; i += 500) {
+    const chunk = own.slice(i, i + 500)
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(chunk, ttlSeconds)
     if (error) throw error
     for (const item of data ?? []) {

@@ -73,6 +73,12 @@ $P -d ${DB}_singles -f supabase/tests/00_supabase_stub.sql
 for f in supabase/migrations/*.sql; do $P -d ${DB}_singles -f "$f"; done
 $P -d ${DB}_singles -f supabase/tests/singles_catalogo_test.sql
 
+# Singles: reglas de precio, juegos activos, búsqueda, alta con lotes y precios.
+$P -d postgres -c "drop database if exists ${DB}_singles2" -c "create database ${DB}_singles2"
+$P -d ${DB}_singles2 -f supabase/tests/00_supabase_stub.sql
+for f in supabase/migrations/*.sql; do $P -d ${DB}_singles2 -f "$f"; done
+$P -d ${DB}_singles2 -f supabase/tests/singles_inventario_test.sql
+
 # Catálogo CENTRAL de singles (otro proyecto: solo sus migraciones).
 $P -d postgres -c "drop database if exists ${DB}_central" -c "create database ${DB}_central"
 $P -d ${DB}_central -f supabase/tests/00_supabase_stub.sql

@@ -1,16 +1,17 @@
 # Catálogo de singles: descarga diaria del proveedor (TCGCSV) al catálogo
 # central y copia a cada tienda de sus juegos activos.
-# - Corre solo cada día a las 21:30 UTC (TCGCSV se actualiza cerca de las 20:00 UTC).
+# - Corre solo cada día a las 05:00 de CDMX (11:00 UTC; GitHub usa UTC y CDMX es
+#   UTC-6 todo el año). TCGCSV se actualiza cerca de las 20:00 UTC del día anterior.
 # - A mano: Actions → "Sincronizar singles" → Run workflow (por juego y/o tienda).
 # - La carga inicial al activar un juego en una tienda lo dispara con
-#   juego + ref (Edge Function, Fase 2).
+#   juego + ref (Edge Function activar-juego).
 # Secrets: SUPABASE_ACCESS_TOKEN y CATALOGO_REF (ID del proyecto kananpos-catalogo).
 # Opcional: TCGAPI_KEY (solo si CATALOG_PROVIDER=tcgapi).
 name: Sincronizar singles
 
 on:
   schedule:
-    - cron: '30 21 * * *'
+    - cron: '0 11 * * *' # 05:00 en CDMX
   workflow_dispatch:
     inputs:
       juego:

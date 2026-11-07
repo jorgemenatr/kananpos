@@ -60,6 +60,10 @@ export interface CachedProduct {
   is_combo?: boolean
   /** Idioma (inglés, español…); null o ausente = no aplica (la caché anterior no lo trae). */
   language?: ProductLanguage | null
+  /** Single: carta del catálogo de singles (la caché anterior no lo trae). */
+  tcg_product_id?: number | null
+  /** Single: estado de la carta (NM, LP…). */
+  card_condition?: string | null
   /** Alta que aún está en la cola (no existe en el servidor todavía). */
   pending?: boolean
 }
@@ -279,6 +283,8 @@ function toCached(p: Product): CachedProduct {
     preorder_reserved: p.preorder_reserved,
     is_combo: p.is_combo,
     language: p.language ?? null,
+    tcg_product_id: p.tcg_product_id ?? null,
+    card_condition: p.card_condition ?? null,
   }
 }
 
@@ -425,7 +431,7 @@ class InventoryStore {
             .from('products')
             .select(
               'id, barcode, name, category, supplier, price, quantity, warehouse_quantity, image_url, is_internal_code, track_stock, ' +
-                'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, language',
+                'is_preorder, preorder_deposit_type, preorder_deposit_value, is_combo, language, tcg_product_id, card_condition',
             )
             .order('created_at', { ascending: true })
             .range(from, from + PAGE - 1)

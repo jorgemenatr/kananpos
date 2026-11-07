@@ -45,7 +45,7 @@ TCGCSV es de 10,000 al día.
 ## Correrla
 
 Automática: workflow **Sincronizar singles** (`.github/workflows/sincronizar-singles.yml`),
-cada día a las 21:30 UTC. Secrets: `SUPABASE_ACCESS_TOKEN` y `CATALOGO_REF`.
+cada día a las 05:00 de CDMX (11:00 UTC). Secrets: `SUPABASE_ACCESS_TOKEN` y `CATALOGO_REF`.
 
 A mano (`.env.clientes` con `SUPABASE_ACCESS_TOKEN` y `CATALOGO_REF`):
 
@@ -70,8 +70,12 @@ También en GitHub: **Actions → Sincronizar singles → Run workflow** (juego,
 2. `npm run singles -- migrar-central`.
 3. `npm run clientes -- migrar` (crea las tablas `tcg_*` en cada tienda).
 4. `npm run singles -- sync`: carga la lista de juegos en cada tienda. Las descargas
-   empiezan cuando una tienda activa un juego (Configuración → Singles y juegos, Fase 2)
-   o con `--juego`.
+   empiezan cuando una tienda activa un juego (Configuración → Singles y juegos) o con
+   `--juego`.
+5. Para la carga inmediata al activar un juego: `GITHUB_DISPATCH_TOKEN` en
+   `.env.clientes` (token fino de GitHub, "Actions: read and write" solo en este
+   repositorio) y `npm run clientes -- funciones` (despliega `activar-juego` y le pone
+   el secret). Sin él, el juego llega en la siguiente actualización automática.
 
 ## Agregar un juego
 
@@ -95,6 +99,7 @@ cruzar fuentes.
 ## Pruebas
 
 ```bash
-npm test                                          # is_single, proveedor y sincronización (vitest)
-PGHOST=/tmp PGPORT=54329 supabase/tests/run.sh    # SQL: upsert idempotente del central y permisos en la tienda
+npm test                                          # is_single, proveedor, sincronización y precio sugerido (vitest)
+PGHOST=/tmp PGPORT=54329 supabase/tests/run.sh    # SQL: upsert idempotente del central, permisos, búsqueda
+                                                  # filtrada por juegos activos, alta con lotes y aplicar precios
 ```

@@ -9,6 +9,8 @@ import { HistoryPage } from './pages/HistoryPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { MostradorPage } from './pages/MostradorPage'
 import { PurchasesPage } from './pages/PurchasesPage'
+import { ReviewPricesPage } from './pages/ReviewPricesPage'
+import { SinglesPage } from './pages/SinglesPage'
 import { TransfersPage } from './pages/TransfersPage'
 import { PreventasPage } from './pages/PreventasPage'
 import { VentasPage } from './pages/VentasPage'
@@ -64,6 +66,22 @@ export function App() {
               element={
                 <ProtectedRoute roles={['admin']}>
                   <PurchasesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="singles"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <SinglesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="revisar-precios"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <ReviewPricesPage />
                 </ProtectedRoute>
               }
             />

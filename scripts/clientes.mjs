@@ -8,7 +8,8 @@
  *   estado                       Migraciones aplicadas y pendientes de cada cliente.
  *   migrar [--prueba]            Aplica las migraciones pendientes (en orden, cada una
  *                                en su propia transacción). --prueba solo las lista.
- *   funciones                    Despliega las Edge Functions (crear-usuario, desactivar-usuario).
+ *   funciones                    Despliega las Edge Functions (crear-usuario, desactivar-usuario,
+ *                                activar-juego) y pone sus secrets (GITHUB_DISPATCH_TOKEN).
  *   alta --ref <id> --subdominio tienda --negocio "Nombre" --prefijo ABC
  *        --admin-correo a@b.mx --admin-nombre "Nombre"
  *        [--juegos pokemon,magic,dragon-shield] [--categorias "Cafetería,Juegos de mesa"]
@@ -54,7 +55,7 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MIGRATIONS_DIR = join(ROOT, 'supabase', 'migrations')
-const FUNCTIONS = ['crear-usuario', 'desactivar-usuario']
+const FUNCTIONS = ['crear-usuario', 'desactivar-usuario', 'activar-juego']
 const FUENTES = JSON.parse(readFileSync(join(ROOT, 'src', 'lib', 'catalogSources.json'), 'utf8'))
 const API = 'https://api.supabase.com/v1'
 
@@ -269,6 +270,20 @@ export function seedCategoriesQuery({ juegos = [], categorias = [] }) {
 }
 
 // ---------- Edge Functions ----------
+/**
+ * Secrets de las Edge Functions que salen de tu .env.clientes (nunca del
+ * repositorio): GITHUB_DISPATCH_TOKEN para que activar-juego pida la carga
+ * inicial de un juego. Sin la variable no se toca nada.
+ */
+async function setFunctionSecrets(ref) {
+  const secrets = ['GITHUB_DISPATCH_TOKEN', 'GITHUB_REPO', 'GITHUB_DISPATCH_REF']
+    .filter((name) => process.env[name])
+    .map((name) => ({ name, value: process.env[name] }))
+  if (!secrets.length) return
+  await api('POST', `/projects/${ref}/secrets`, secrets)
+  console.log(`  ${ref}: secrets ${secrets.map((s) => s.name).join(', ')}`)
+}
+
 function deployFunctions(ref) {
   for (const fn of FUNCTIONS) {
     console.log(`  ${ref}: desplegando ${fn} …`)
@@ -331,7 +346,10 @@ async function cmdMigrar(opts) {
 }
 
 async function cmdFunciones(opts) {
-  for (const ref of clientRefs(opts)) deployFunctions(ref)
+  for (const ref of clientRefs(opts)) {
+    deployFunctions(ref)
+    await setFunctionSecrets(ref)
+  }
 }
 
 async function cmdAlta(opts) {
@@ -406,6 +424,7 @@ async function cmdAlta(opts) {
 
   console.log('\n5. Edge Functions')
   deployFunctions(ref)
+  await setFunctionSecrets(ref)
 
   console.log('\n6. Primer administrador')
   const { anon, service } = await apiKeys(ref)

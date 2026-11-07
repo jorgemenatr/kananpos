@@ -39,6 +39,9 @@ const NAV: NavItem[] = [
       { to: '/inventario-inicial', label: 'Inventario inicial', icon: 'barcode', admin: true, initialLoad: true },
       // Mercancía que llega de un proveedor (también da de alta productos nuevos).
       { to: '/compras', label: 'Compras', icon: 'truck', admin: true },
+      // Cartas sueltas del catálogo de singles (entran como compra, con su lote).
+      { to: '/singles', label: 'Alta de singles', icon: 'plus', admin: true },
+      { to: '/revisar-precios', label: 'Revisar precios', icon: 'refresh', admin: true },
       // Corregir lo que hay, con motivo.
       { to: '/conteo', label: 'Conteo y ajustes', icon: 'list', admin: true },
       { to: '/movimiento-bodega', label: 'Movimiento de bodega', icon: 'swap', admin: true },
